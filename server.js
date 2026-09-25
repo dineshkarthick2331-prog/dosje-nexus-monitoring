@@ -190,6 +190,126 @@ app.post("/api/alerts/:id/resolve", (req, res) => {
   res.json({ ok: true });
 });
 
+// Projects CRUD
+app.get("/api/projects", (req, res) => {
+  res.json(db.projects);
+});
+
+app.post("/api/projects", (req, res) => {
+  const { name, scheme, state, district, beneficiaries, cctv_status, risk_score } = req.body;
+  if (!name || !scheme || !state || !district) {
+    return res.status(400).json({ error: "Name, scheme, state, and district are required" });
+  }
+  const id = db.projects.length ? Math.max(...db.projects.map(p => p.id)) + 1 : 1;
+  const newProject = {
+    id,
+    name,
+    scheme: scheme || "Scheme A",
+    state,
+    district,
+    status: req.body.status || "Active",
+    beneficiaries: Number(beneficiaries) || 50,
+    cctv_status: cctv_status || "Live",
+    risk_score: Number(risk_score) || 20,
+    last_inspection: new Date().toISOString().split("T")[0]
+  };
+  db.projects.push(newProject);
+  saveStore(db);
+  res.status(201).json(newProject);
+});
+
+app.put("/api/projects/:id", (req, res) => {
+  const id = Number(req.params.id);
+  const pIndex = db.projects.findIndex(p => p.id === id);
+  if (pIndex === -1) return res.status(404).json({ error: "Project not found" });
+
+  const current = db.projects[pIndex];
+  db.projects[pIndex] = {
+    ...current,
+    ...req.body,
+    id: current.id,
+    beneficiaries: req.body.beneficiaries !== undefined ? Number(req.body.beneficiaries) : current.beneficiaries,
+    risk_score: req.body.risk_score !== undefined ? Number(req.body.risk_score) : current.risk_score
+  };
+  saveStore(db);
+  res.json(db.projects[pIndex]);
+});
+
+app.delete("/api/projects/:id", (req, res) => {
+  const id = Number(req.params.id);
+  const pIndex = db.projects.findIndex(p => p.id === id);
+  if (pIndex === -1) return res.status(404).json({ error: "Project not found" });
+  
+  const removed = db.projects.splice(pIndex, 1)[0];
+  // Remove related alerts or inspections optionally
+  saveStore(db);
+  res.json({ ok: true, removed });
+});
+
+// Trigger or simulate new alert
+app.post("/api/alerts", (req, res) => {
+  const { project_id, severity, title, message } = req.body;
+  const id = db.alerts.length ? Math.max(...db.alerts.map(a => a.id)) + 1 : 1;
+  const newAlert = {
+    id,
+    project_id: project_id ? Number(project_id) : (db.projects[0] ? db.projects[0].id : null),
+    severity: severity || "MEDIUM",
+    title: title || "Automated Anomaly",
+    message: message || "Flagged by automated monitoring.",
+    created_at: now(),
+    resolved: 0
+  };
+  db.alerts.unshift(newAlert);
+  saveStore(db);
+  res.status(201).json(newAlert);
+});
+
+// Record VC Verification session
+app.post("/api/vc/session", (req, res) => {
+  const { project_id, officer, checklist, notes } = req.body;
+  const id = db.inspections.length ? Math.max(...db.inspections.map(i => i.id)) + 1 : 1;
+  const newInspection = {
+    id,
+    project_id: Number(project_id) || (db.projects[0] ? db.projects[0].id : 1),
+    officer: officer || "Verification Officer",
+    assigned_at: now(),
+    status: "Completed",
+    latitude: 13.0827,
+    longitude: 80.2707,
+    findings: `[Video Verification Session] Verified: ${checklist ? checklist.join(", ") : "All parameters"}. Notes: ${notes || "Verification conducted via live video conference."}`,
+    evidence: null,
+    score: 95
+  };
+  db.inspections.push(newInspection);
+  saveStore(db);
+  res.json({ ok: true, inspection: newInspection });
+});
+
+// Generate dynamic report data
+app.get("/api/reports/:type", (req, res) => {
+  const { type } = req.params;
+  const summary = {
+    generated_at: now(),
+    total_projects: db.projects.length,
+    active_projects: db.projects.filter(p => p.status === "Active").length,
+    live_cctv: db.projects.filter(p => p.cctv_status === "Live").length,
+    average_risk: Math.round(db.projects.reduce((s, p) => s + p.risk_score, 0) / (db.projects.length || 1)),
+    total_inspections: db.inspections.length,
+    completed_inspections: db.inspections.filter(i => i.status === "Completed").length,
+    unresolved_alerts: db.alerts.filter(a => !a.resolved).length,
+    projects: db.projects,
+    inspections: db.inspections.map(i => {
+      const p = db.projects.find(x => x.id === i.project_id);
+      return { ...i, project_name: p ? p.name : "Unknown" };
+    }),
+    alerts: db.alerts.filter(a => !a.resolved).map(a => {
+      const p = db.projects.find(x => x.id === a.project_id);
+      return { ...a, project_name: p ? p.name : "System" };
+    })
+  };
+  res.json(summary);
+});
+
 // Only listen when running standalone directly (not when required by Vercel serverless function)
 if (require.main === module) {
   app.listen(PORT, () => {

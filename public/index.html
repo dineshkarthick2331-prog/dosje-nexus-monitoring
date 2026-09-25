@@ -89,12 +89,30 @@
 
   <main class="main">
     <header class="topbar">
-      <button id="mobileMenu" class="mobile-menu">☰</button>
+      <button id="mobileMenu" class="mobile-menu" title="Toggle Navigation">☰</button>
       <div class="breadcrumbs">DoSJE <span>/</span> <b id="routeName">Home</b></div>
       <div class="top-actions">
+        <button id="simToggle" class="sim-btn" title="Toggle live telemetry simulation">
+          <i class="sim-pulse"></i> <span>Simulation: ON</span>
+        </button>
         <div class="live-status"><i></i> LIVE <span id="clock"></span></div>
-        <button class="top-icon">⌕</button>
-        <button class="top-icon" id="notificationBtn">♢</button>
+        <button class="top-icon" id="searchBtn" title="Global Quick Search (Ctrl+K)">⌕</button>
+        <div class="notification-wrap">
+          <button class="top-icon" id="notificationBtn" title="Notifications">
+            ♢<span class="badge-dot" id="notifBadge"></span>
+          </button>
+          <div id="notificationPopover" class="popover hidden">
+            <div class="popover-head">
+              <b>System Notifications</b>
+              <span id="notifCountText">0 alerts</span>
+            </div>
+            <div id="notifList" class="popover-body"></div>
+            <div class="popover-foot">
+              <a href="#alerts">View all alerts →</a>
+            </div>
+          </div>
+        </div>
+        <button class="top-icon" id="themeToggle" title="Toggle Dark/Light Mode">◐</button>
         <div class="user-menu"><div class="avatar" id="avatar">DA</div><div><b id="userName">Administrator</b><small id="userRole">Department Official</small></div></div>
       </div>
     </header>
@@ -104,7 +122,10 @@
       <section class="page" data-page="home">
         <div class="welcome">
           <div><span class="eyebrow light">LIVE COMMAND CENTRE</span><h1>Good morning, <span id="welcomeName">Administrator</span>.</h1><p>Here is today's operational overview across schemes, projects and field inspections.</p></div>
-          <button class="btn teal" id="randomInspection">+ Assign Random Inspection</button>
+          <div class="welcome-actions">
+            <button class="btn teal" id="randomInspection">+ Assign Random Inspection</button>
+            <button class="btn secondary light-border" id="homeSimulateAlert">⚡ Simulate Alert</button>
+          </div>
         </div>
         <div class="stat-grid" id="stats"></div>
         <div class="home-grid">
@@ -127,54 +148,556 @@
 
       <!-- PROJECTS -->
       <section class="page hidden" data-page="projects">
-        <div class="section-title"><div><span class="eyebrow">PROJECT DIRECTORY</span><h1>Projects & Institutes</h1><p>Search projects, beneficiaries, scheme status and monitoring risk.</p></div><button class="btn primary">＋ Add project</button></div>
-        <div class="toolbar"><div class="search"><span>⌕</span><input id="projectSearch" placeholder="Search project, state or district"></div><select id="riskFilter"><option value="">All risk levels</option><option value="high">High risk</option><option value="medium">Medium risk</option><option value="low">Low risk</option></select><select><option>All schemes</option><option>Scheme A</option><option>Scheme B</option><option>Scheme C</option></select></div>
+        <div class="section-title">
+          <div><span class="eyebrow">PROJECT DIRECTORY</span><h1>Projects & Institutes</h1><p>Search projects, beneficiaries, scheme status and monitoring risk.</p></div>
+          <button class="btn primary" id="addProjectBtn">＋ Add project</button>
+        </div>
+        <div class="toolbar">
+          <div class="search"><span>⌕</span><input id="projectSearch" placeholder="Search project, state, district or scheme… (Press '/' to focus)"></div>
+          <select id="riskFilter">
+            <option value="">All risk levels</option>
+            <option value="high">High risk (60+)</option>
+            <option value="medium">Medium risk (35-59)</option>
+            <option value="low">Low risk (&lt;35)</option>
+          </select>
+          <select id="schemeFilter">
+            <option value="">All schemes</option>
+          </select>
+          <select id="cctvStatusFilter">
+            <option value="">All CCTV Status</option>
+            <option value="Live">CCTV Live</option>
+            <option value="Offline">CCTV Offline</option>
+          </select>
+          <select id="sortFilter">
+            <option value="risk-desc">Sort: Risk (High to Low)</option>
+            <option value="risk-asc">Sort: Risk (Low to High)</option>
+            <option value="name-asc">Sort: Name (A-Z)</option>
+            <option value="beneficiaries-desc">Sort: Beneficiaries (Max)</option>
+          </select>
+        </div>
         <div id="projectCards" class="project-grid"></div>
       </section>
 
       <!-- CCTV -->
       <section class="page hidden" data-page="cctv">
-        <div class="section-title"><div><span class="eyebrow">SURVEILLANCE NETWORK</span><h1>Live CCTV Monitoring</h1><p>Connected camera endpoints across participating projects.</p></div><div class="live-badge"><i></i> Live network</div></div>
-        <div class="cctv-toolbar"><div class="camera-summary"><b id="liveCount">0</b><span>streams online</span></div><button class="btn secondary" id="refreshCctv">↻ Refresh streams</button></div>
+        <div class="section-title">
+          <div><span class="eyebrow">SURVEILLANCE NETWORK</span><h1>Live CCTV Monitoring</h1><p>Interactive camera feeds with telemetry, PTZ controls and snapshot capture.</p></div>
+          <div class="live-badge"><i class="pulse-dot"></i> Live Surveillance Grid</div>
+        </div>
+        <div class="cctv-toolbar">
+          <div class="camera-summary"><b id="liveCount">0</b><span>streams online</span></div>
+          <div class="cctv-actions">
+            <select id="cctvGridFilter">
+              <option value="all">All Feeds</option>
+              <option value="Live">Live Only</option>
+              <option value="Offline">Offline Only</option>
+            </select>
+            <button class="btn secondary" id="refreshCctv">↻ Refresh streams</button>
+          </div>
+        </div>
         <div id="cctvGrid" class="cctv-grid"></div>
       </section>
 
       <!-- INSPECTIONS -->
       <section class="page hidden" data-page="inspections">
-        <div class="section-title"><div><span class="eyebrow">FIELD OPERATIONS</span><h1>Inspection Management</h1><p>Random assignment, mobile inspection and geo-tagged evidence.</p></div><button class="btn primary" id="newInspection">＋ New inspection</button></div>
-        <div class="inspection-cards"><div class="mini-panel"><span>Pending</span><b id="pendingCount">0</b><small>Assignments waiting</small></div><div class="mini-panel"><span>Completed</span><b id="completedCount">0</b><small>This monitoring cycle</small></div><div class="mini-panel"><span>Geo evidence</span><b id="geoCount">0%</b><small>Reports with location</small></div></div>
-        <div class="panel table-wrap"><div class="panel-head"><div><h3>Inspection assignments</h3><p>Most recent first</p></div><button class="btn secondary" id="exportInspections">⇩ Export</button></div><table><thead><tr><th>PROJECT</th><th>OFFICER</th><th>DATE</th><th>STATUS</th><th>GEO</th><th>SCORE</th></tr></thead><tbody id="inspectionTable"></tbody></table></div>
+        <div class="section-title">
+          <div><span class="eyebrow">FIELD OPERATIONS</span><h1>Inspection Management</h1><p>Random assignment, mobile inspection, live geo-tagging and scoring.</p></div>
+          <div class="section-actions">
+            <button class="btn teal" id="assignRandomBtn">⚡ Assign Random</button>
+            <button class="btn primary" id="newInspection">＋ New inspection</button>
+          </div>
+        </div>
+        <div class="inspection-cards">
+          <div class="mini-panel"><span>Pending</span><b id="pendingCount">0</b><small>Assignments waiting</small></div>
+          <div class="mini-panel"><span>Completed</span><b id="completedCount">0</b><small>This monitoring cycle</small></div>
+          <div class="mini-panel"><span>Geo evidence</span><b id="geoCount">0%</b><small>Reports with location</small></div>
+        </div>
+        <div class="panel table-wrap">
+          <div class="panel-head">
+            <div><h3>Inspection assignments</h3><p>Click any row to view complete inspection details & evidence</p></div>
+            <div class="table-tools">
+              <input type="text" id="inspectionSearch" placeholder="Filter inspections…" class="table-search">
+              <button class="btn secondary" id="exportInspectionsCsv">⇩ Export CSV</button>
+              <button class="btn secondary" id="exportInspectionsPrint">🖨 Print</button>
+            </div>
+          </div>
+          <table>
+            <thead>
+              <tr><th>PROJECT</th><th>OFFICER</th><th>DATE</th><th>STATUS</th><th>GEO</th><th>SCORE</th><th>ACTION</th></tr>
+            </thead>
+            <tbody id="inspectionTable"></tbody>
+          </table>
+        </div>
       </section>
 
       <!-- ANALYTICS -->
       <section class="page hidden" data-page="analytics">
-        <div class="section-title"><div><span class="eyebrow">INTELLIGENCE LAYER</span><h1>AI Analytics</h1><p>Early-warning indicators from attendance, CCTV and inspection signals.</p></div></div>
-        <div class="analytics-grid"><div class="panel"><div class="panel-head"><div><h3>Risk by project</h3><p>Current portfolio risk score</p></div></div><div id="riskChart"></div></div><div class="panel"><h3>Monitoring intelligence</h3><div class="ai-score"><div class="score-ring" id="avgRisk">42</div><div><b>Portfolio risk index</b><p>Calculated from configured monitoring signals.</p></div></div><div class="insight"><span>✦</span><div><b>Attendance anomaly</b><p>High variance between expected and present beneficiaries can trigger inspection review.</p></div></div><div class="insight"><span>◉</span><div><b>CCTV heartbeat</b><p>Offline camera endpoints are surfaced as operational exceptions.</p></div></div><div class="insight"><span>⌖</span><div><b>Inspection coverage</b><p>Geo-tagged evidence improves traceability of field reports.</p></div></div></div></div>
+        <div class="section-title">
+          <div><span class="eyebrow">INTELLIGENCE LAYER</span><h1>AI Analytics & Anomaly Engine</h1><p>Early-warning indicators, multi-signal risk forecasting, and what-if simulation.</p></div>
+          <button class="btn teal" id="runAiDiagnostics">⚡ Run Anomaly Diagnostics</button>
+        </div>
+        <div class="analytics-grid">
+          <div class="panel">
+            <div class="panel-head">
+              <div><h3>Risk distribution by project</h3><p>Click any bar to drill down into project telemetry</p></div>
+              <span class="badge-tag">Real-time</span>
+            </div>
+            <div id="riskChart"></div>
+          </div>
+
+          <div class="panel">
+            <h3>Monitoring intelligence</h3>
+            <div class="ai-score">
+              <div class="score-ring" id="avgRisk">42</div>
+              <div>
+                <b>Portfolio risk index</b>
+                <p>Calculated dynamically from biometric variance, CCTV uptime and inspection frequency.</p>
+              </div>
+            </div>
+            <div class="insight"><span>✦</span><div><b>Attendance Anomaly Detector</b><p>Flagged when attendance variance crosses the configured 15% threshold.</p></div></div>
+            <div class="insight"><span>◉</span><div><b>CCTV Heartbeat Sentinel</b><p>Continuously monitors camera ping loss exceeding 120 seconds.</p></div></div>
+            <div class="insight"><span>⌖</span><div><b>Geographic Integrity Check</b><p>Validates that inspection GPS coordinates correspond to registered center boundary.</p></div></div>
+          </div>
+        </div>
+
+        <!-- Interactive What-If Simulator -->
+        <div class="panel simulator-panel">
+          <div class="panel-head">
+            <div>
+              <h3>🔮 Interactive "What-If" AI Risk Calculator</h3>
+              <p>Simulate parameter changes to predict risk score fluctuations before taking field actions.</p>
+            </div>
+            <span class="simulator-tag">Predictive Model v2.4</span>
+          </div>
+          <div class="simulator-body">
+            <div class="sim-controls">
+              <div class="sim-control">
+                <div class="sim-label">
+                  <span>Beneficiary Attendance Rate</span>
+                  <b id="simValAttendance">85%</b>
+                </div>
+                <input type="range" id="simAttendance" min="30" max="100" value="85" class="sim-slider">
+              </div>
+              <div class="sim-control">
+                <div class="sim-label">
+                  <span>CCTV Network Uptime</span>
+                  <b id="simValCctv">95%</b>
+                </div>
+                <input type="range" id="simCctv" min="0" max="100" value="95" class="sim-slider">
+              </div>
+              <div class="sim-control">
+                <div class="sim-label">
+                  <span>Days Since Last Field Inspection</span>
+                  <b id="simValDays">12 days</b>
+                </div>
+                <input type="range" id="simDays" min="1" max="60" value="12" class="sim-slider">
+              </div>
+              <div class="sim-control">
+                <div class="sim-label">
+                  <span>Target Project to Calibrate</span>
+                  <select id="simProjectSelect" class="sim-select"></select>
+                </div>
+              </div>
+            </div>
+            <div class="sim-result">
+              <div class="sim-score-card">
+                <span>Predicted Risk Index</span>
+                <div class="sim-score-badge" id="simPredictedScore">28</div>
+                <span class="sim-score-status" id="simRiskRating">Low Risk</span>
+                <p id="simReasoning">Attendance within safe limits. CCTV feed active. Inspection recent.</p>
+                <button class="btn primary" id="applySimScoreBtn">Apply Score to Project</button>
+              </div>
+            </div>
+          </div>
+        </div>
       </section>
 
       <!-- ALERTS -->
       <section class="page hidden" data-page="alerts">
-        <div class="section-title"><div><span class="eyebrow">EXCEPTIONS</span><h1>Alerts & Actions</h1><p>Resolve operational anomalies and keep an auditable trail.</p></div><button class="btn secondary" id="refreshAlerts">↻ Refresh</button></div>
+        <div class="section-title">
+          <div><span class="eyebrow">EXCEPTIONS & ANOMALIES</span><h1>Alerts & Actions</h1><p>Triage active operational anomalies, dispatch surprise audits, and resolve findings.</p></div>
+          <div class="section-actions">
+            <button class="btn teal" id="newAlertSimBtn">⚡ Simulate Anomaly</button>
+            <button class="btn secondary" id="refreshAlerts">↻ Refresh</button>
+          </div>
+        </div>
+        <div class="alert-filter-bar">
+          <button class="filter-chip active" data-sev="ALL">All Alerts (<span id="chipAllCount">0</span>)</button>
+          <button class="filter-chip" data-sev="CRITICAL">Critical (<span id="chipCritCount">0</span>)</button>
+          <button class="filter-chip" data-sev="HIGH">High (<span id="chipHighCount">0</span>)</button>
+          <button class="filter-chip" data-sev="MEDIUM">Medium (<span id="chipMedCount">0</span>)</button>
+        </div>
         <div id="alertCards" class="alerts-list"></div>
       </section>
 
       <!-- VC -->
       <section class="page hidden" data-page="vc">
-        <div class="section-title"><div><span class="eyebrow">RANDOM VERIFICATION</span><h1>Random Video Conference</h1><p>Initiate a verification session with project staff and beneficiaries.</p></div><button class="btn primary" id="startVc">Start random VC</button></div>
-        <div class="vc-layout"><div class="vc-stage"><div class="vc-grid"><div class="vc-person main"><div class="person">PI</div><b>Project Incharge</b><small>Camera ready</small></div><div class="vc-person"><div class="person">ST</div><b>Staff</b><small>Waiting to join</small></div><div class="vc-person"><div class="person">BE</div><b>Beneficiary</b><small>Waiting to join</small></div></div><div class="vc-controls"><button>🎙</button><button>▣</button><button class="end">End call</button></div></div><div class="panel checklist"><h3>Verification checklist</h3><label><input type="checkbox"> Confirm identity & location</label><label><input type="checkbox"> Confirm beneficiary presence</label><label><input type="checkbox"> Verify service delivery</label><label><input type="checkbox"> Record observations</label><div class="vc-note">VC integration point: connect your approved WebRTC / Teams / Zoom / enterprise provider here.</div></div></div>
+        <div class="section-title">
+          <div><span class="eyebrow">SURPRISE VERIFICATION</span><h1>Random Video Conference</h1><p>Instant encrypted verification call with project in-charge, staff and beneficiaries.</p></div>
+          <div class="vc-top-select">
+            <label>Target Institute:</label>
+            <select id="vcProjectSelect"></select>
+            <button class="btn primary" id="startVc">⚡ Connect Verification Call</button>
+          </div>
+        </div>
+        <div class="vc-layout">
+          <div class="vc-stage">
+            <div class="vc-call-header">
+              <div class="vc-call-info">
+                <span class="live-dot-pulse"></span>
+                <b id="vcTargetName">Asha Rehabilitation Centre</b>
+                <span class="vc-timer" id="vcCallTimer">00:00</span>
+              </div>
+              <div class="vc-encryption-badge">🔒 End-to-End Encrypted Verification Channel</div>
+            </div>
+            <div class="vc-grid">
+              <div class="vc-person main" id="vcMainPerson">
+                <div class="vc-feed-container">
+                  <canvas id="vcCanvasIncharge" class="vc-canvas"></canvas>
+                  <div class="vc-overlay-tag">
+                    <span id="vcInchargeTag">Project Incharge (Dr. S. Raman)</span>
+                    <span class="vc-signal">● 1080p · 28ms</span>
+                  </div>
+                </div>
+              </div>
+              <div class="vc-person" id="vcStaffPerson">
+                <div class="vc-feed-container">
+                  <canvas id="vcCanvasStaff" class="vc-canvas"></canvas>
+                  <div class="vc-overlay-tag">Staff Nurse / Warden</div>
+                </div>
+              </div>
+              <div class="vc-person" id="vcSelfPerson">
+                <div class="vc-feed-container">
+                  <video id="vcLocalVideo" autoplay playsinline muted class="hidden"></video>
+                  <canvas id="vcCanvasSelf" class="vc-canvas"></canvas>
+                  <div class="vc-overlay-tag">You (Monitoring Officer)</div>
+                </div>
+              </div>
+            </div>
+            <div class="vc-controls">
+              <button id="vcMicBtn" class="vc-btn active" title="Toggle Microphone">🎙 <span>Mic On</span></button>
+              <button id="vcCamBtn" class="vc-btn active" title="Toggle Camera">📷 <span>Cam On</span></button>
+              <button id="vcWebcamBtn" class="vc-btn" title="Use Real Webcam">🎥 <span>Use My Webcam</span></button>
+              <button id="vcSnapshotBtn" class="vc-btn" title="Capture Evidence Frame">📸 <span>Capture Evidence</span></button>
+              <button id="vcEndBtn" class="vc-btn end" title="End Verification Call">End call</button>
+            </div>
+          </div>
+
+          <div class="panel checklist">
+            <div class="panel-head">
+              <div>
+                <h3>Verification checklist</h3>
+                <p>Audit parameters required for sign-off</p>
+              </div>
+              <span class="checklist-progress" id="checkProgressText">0 / 4 verified</span>
+            </div>
+            <div class="checklist-bar"><span id="checkProgressBar" style="width:0%"></span></div>
+            <label class="check-item"><input type="checkbox" class="vc-check" data-item="ID & Geo Location"> Confirm in-charge photo ID & geo-location</label>
+            <label class="check-item"><input type="checkbox" class="vc-check" data-item="Beneficiary Headcount"> Spot-check attendance register vs physical headcount</label>
+            <label class="check-item"><input type="checkbox" class="vc-check" data-item="Kitchen & Medical Standards"> Kitchen, sanitation & medical supply inspection</label>
+            <label class="check-item"><input type="checkbox" class="vc-check" data-item="Beneficiary Grievance Redressal"> Direct beneficiary grievance consultation</label>
+            
+            <label class="notes-label">Official Observation Notes:
+              <textarea id="vcNotes" placeholder="Enter spot verification observations, compliance flags, or remarks…"></textarea>
+            </label>
+            <button class="btn primary wide" id="submitVcVerification">✓ Sign & Seal Verification Record</button>
+          </div>
+        </div>
       </section>
 
       <!-- REPORTS -->
       <section class="page hidden" data-page="reports">
-        <div class="section-title"><div><span class="eyebrow">GOVERNANCE OUTPUTS</span><h1>Reports</h1><p>Generate monitoring summaries for review, compliance and governance.</p></div><button class="btn primary" onclick="window.print()">⇩ Print / Export</button></div>
-        <div class="report-grid"><div class="report-card"><div class="report-icon">▤</div><h3>Monthly monitoring</h3><p>Projects, inspections, alerts and operational coverage.</p><button class="text-btn">Generate report →</button></div><div class="report-card"><div class="report-icon">✓</div><h3>Inspection compliance</h3><p>Assignments, completion, scores and geo-evidence.</p><button class="text-btn">Generate report →</button></div><div class="report-card"><div class="report-icon">⌁</div><h3>AI anomaly summary</h3><p>Attendance variance and monitoring anomaly signals.</p><button class="text-btn">Generate report →</button></div></div>
+        <div class="section-title">
+          <div><span class="eyebrow">GOVERNANCE & AUDIT</span><h1>Monitoring Reports</h1><p>Generate, preview, export and print compliance and operational reports.</p></div>
+          <button class="btn primary" onclick="window.print()">🖨 Print Dashboard</button>
+        </div>
+        <div class="report-grid">
+          <div class="report-card">
+            <div class="report-icon">▤</div>
+            <h3>Monthly Monitoring Overview</h3>
+            <p>Comprehensive portfolio report covering active institutions, risk scores, CCTV availability and alert resolution rates.</p>
+            <button class="btn secondary" data-report-type="monthly">Generate & Preview →</button>
+          </div>
+          <div class="report-card">
+            <div class="report-icon">✓</div>
+            <h3>Inspection Compliance Audit</h3>
+            <p>Complete log of surprise assignments, completed field audits, geo-tagged locations and score distributions.</p>
+            <button class="btn secondary" data-report-type="inspections">Generate & Preview →</button>
+          </div>
+          <div class="report-card">
+            <div class="report-icon">⌁</div>
+            <h3>AI Anomaly & Risk Summary</h3>
+            <p>Predictive anomaly flags, attendance variance triggers, and offline camera telemetry history.</p>
+            <button class="btn secondary" data-report-type="anomalies">Generate & Preview →</button>
+          </div>
+        </div>
       </section>
     </div>
   </main>
 </div>
 
+<!-- ================= MODALS ================= -->
+
+<!-- ADD PROJECT MODAL -->
+<div id="projectModal" class="modal hidden">
+  <div class="modal-box">
+    <button class="close" id="closeProjectModal">×</button>
+    <span class="eyebrow">INSTITUTION ONBOARDING</span>
+    <h2>Add New Project</h2>
+    <p class="sub">Register a new institution or welfare centre into the monitoring grid.</p>
+    <form id="projectForm">
+      <label>Institution / Project Name
+        <input id="projName" required placeholder="e.g. Samarth Rehabilitation Centre">
+      </label>
+      <div class="two-col">
+        <label>Scheme
+          <select id="projScheme" required>
+            <option value="Scheme A">Scheme A (Rehabilitation)</option>
+            <option value="Scheme B">Scheme B (Vocational Support)</option>
+            <option value="Scheme C">Scheme C (Senior Care)</option>
+            <option value="Scheme D">Scheme D (Youth Empowerment)</option>
+            <option value="PM-DAKSH">PM-DAKSH</option>
+            <option value="SMILE">SMILE Scheme</option>
+          </select>
+        </label>
+        <label>Status
+          <select id="projStatus">
+            <option value="Active">Active</option>
+            <option value="Review">Under Review</option>
+            <option value="Suspended">Suspended</option>
+          </select>
+        </label>
+      </div>
+      <div class="two-col">
+        <label>State
+          <input id="projState" required placeholder="e.g. Tamil Nadu">
+        </label>
+        <label>District
+          <input id="projDistrict" required placeholder="e.g. Chennai">
+        </label>
+      </div>
+      <div class="two-col">
+        <label>Beneficiaries Count
+          <input id="projBeneficiaries" type="number" min="1" value="80" required>
+        </label>
+        <label>CCTV Status
+          <select id="projCctv">
+            <option value="Live">Live</option>
+            <option value="Offline">Offline</option>
+          </select>
+        </label>
+      </div>
+      <label>Initial Risk Score (0 - 100)
+        <input id="projRisk" type="range" min="0" max="100" value="25" oninput="$('#projRiskVal').textContent=this.value">
+        <span class="range-hint">Selected: <b id="projRiskVal">25</b></span>
+      </label>
+      <div class="modal-actions">
+        <button type="button" class="btn secondary" id="cancelProjectBtn">Cancel</button>
+        <button type="submit" class="btn primary">Create Project</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- PROJECT DETAIL DRAWER / MODAL -->
+<div id="projectDetailModal" class="modal hidden">
+  <div class="modal-box modal-wide">
+    <button class="close" id="closeDetailModal">×</button>
+    <div id="projectDetailContent"></div>
+  </div>
+</div>
+
+<!-- CCTV SURVEILLANCE MONITOR PLAYER MODAL -->
+<div id="cctvPlayerModal" class="modal hidden">
+  <div class="modal-box modal-xl cctv-modal-box">
+    <button class="close" id="closeCctvModal">×</button>
+    <div class="cctv-player-header">
+      <div>
+        <span class="eyebrow" id="cctvCamTag">CAM-01 · LIVE FEED</span>
+        <h2 id="cctvModalTitle">Asha Rehabilitation Centre</h2>
+        <p class="sub" id="cctvModalLoc">Tiruvallur, Tamil Nadu · Connected Stream</p>
+      </div>
+      <div class="cctv-header-controls">
+        <button class="btn secondary" id="cctvTogglePower">Toggle Online/Offline</button>
+        <button class="btn teal" id="cctvTriggerMotion">⚠️ Simulate Motion Alarm</button>
+      </div>
+    </div>
+
+    <div class="cctv-viewport-wrapper">
+      <canvas id="cctvMainCanvas" width="800" height="460"></canvas>
+      <div class="cctv-viewport-overlay">
+        <div class="cctv-telemetry-top">
+          <span class="cctv-rec-badge"><i class="rec-dot"></i> REC</span>
+          <span id="cctvTimecode">2026-09-25 15:30:00</span>
+          <span id="cctvFps">24.0 FPS · 3.2 Mbps</span>
+        </div>
+        <div class="cctv-crosshair"></div>
+        <div class="cctv-telemetry-bottom">
+          <span id="cctvFilterLabel">MODE: STANDARD 1080p</span>
+          <span id="cctvPanTiltLabel">PAN: 0° | TILT: 0° | ZOOM: 1.0x</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="cctv-controls-bar">
+      <!-- PTZ Controls -->
+      <div class="cctv-ptz-group">
+        <label>PTZ Camera Controls</label>
+        <div class="ptz-pad">
+          <button class="ptz-btn" id="ptzUp" title="Tilt Up">▲</button>
+          <div class="ptz-mid">
+            <button class="ptz-btn" id="ptzLeft" title="Pan Left">◀</button>
+            <button class="ptz-btn" id="ptzReset" title="Reset Center">●</button>
+            <button class="ptz-btn" id="ptzRight" title="Pan Right">▶</button>
+          </div>
+          <button class="ptz-btn" id="ptzDown" title="Tilt Down">▼</button>
+        </div>
+      </div>
+
+      <!-- Zoom Slider -->
+      <div class="cctv-zoom-group">
+        <label>Optical Zoom: <b id="zoomValueText">1.0x</b></label>
+        <input type="range" id="cctvZoom" min="10" max="35" value="10" class="sim-slider">
+      </div>
+
+      <!-- Vision Filter Modes -->
+      <div class="cctv-vision-group">
+        <label>Optical Sensor Mode</label>
+        <div class="filter-button-group">
+          <button class="vision-btn active" data-mode="normal">Standard</button>
+          <button class="vision-btn" data-mode="night">Night Vision (IR)</button>
+          <button class="vision-btn" data-mode="thermal">Thermal Heatmap</button>
+        </div>
+      </div>
+
+      <!-- Snapshot Capture -->
+      <div class="cctv-action-group">
+        <label>Snapshot & Evidence</label>
+        <button class="btn primary" id="cctvSnapshotBtn">📸 Capture Evidence Frame</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- INSPECTION MODAL -->
-<div id="inspectionModal" class="modal hidden"><div class="modal-box"><button class="close" id="closeModal">×</button><span class="eyebrow">MOBILE INSPECTION</span><h2>Submit inspection</h2><p class="sub">Capture findings and location evidence from the field.</p><form id="inspectionForm"><label>Project<select id="inspectProject" required></select></label><label>Officer<input id="inspectOfficer" required></label><label>Findings<textarea id="findings" placeholder="Enter inspection observations…"></textarea></label><div class="geo-box"><div><b>Geo-tag</b><small id="geoText">Location not captured</small></div><button type="button" class="btn secondary" id="captureGeo">⌖ Capture location</button></div><label>Evidence<input id="evidence" type="file" accept="image/*,video/*"></label><label>Inspection score<input id="score" type="number" min="0" max="100" value="80"></label><button class="btn primary wide">Submit inspection</button></form></div></div>
+<div id="inspectionModal" class="modal hidden">
+  <div class="modal-box">
+    <button class="close" id="closeModal">×</button>
+    <span class="eyebrow">MOBILE FIELD INSPECTION</span>
+    <h2>Submit Field Inspection</h2>
+    <p class="sub">Capture geotagged findings, photo evidence and compliance scoring.</p>
+    <form id="inspectionForm">
+      <label>Project / Institution
+        <select id="inspectProject" required></select>
+      </label>
+      <label>Inspection Officer
+        <input id="inspectOfficer" required placeholder="Officer full name">
+      </label>
+      <label>Key Findings & Observations
+        <textarea id="findings" required placeholder="Record observations on infrastructure, beneficiary attendance, hygiene, records..."></textarea>
+      </label>
+      <div class="geo-box">
+        <div>
+          <b>GPS Geotag Verification</b>
+          <small id="geoText">Location not captured</small>
+        </div>
+        <button type="button" class="btn secondary" id="captureGeo">⌖ Capture GPS</button>
+      </div>
+      <label>Photo Evidence
+        <input id="evidence" type="file" accept="image/*,video/*">
+      </label>
+      <div id="evidencePreviewWrap" class="hidden">
+        <img id="evidencePreview" src="" alt="Evidence Preview" class="evidence-thumb">
+        <button type="button" class="text-btn danger" id="removeEvidenceBtn">Remove photo</button>
+      </div>
+      <label>Compliance Score (0 - 100)
+        <div class="score-input-wrap">
+          <input id="score" type="range" min="0" max="100" value="85" oninput="$('#scoreVal').textContent=this.value">
+          <b id="scoreVal">85</b>
+        </div>
+      </label>
+      <div class="modal-actions">
+        <button type="button" class="btn secondary" id="cancelInspectionBtn">Cancel</button>
+        <button type="submit" class="btn primary wide">Submit & Timestamp Inspection</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- INSPECTION DETAIL MODAL -->
+<div id="inspectionDetailModal" class="modal hidden">
+  <div class="modal-box">
+    <button class="close" id="closeInspectionDetailModal">×</button>
+    <div id="inspectionDetailContent"></div>
+  </div>
+</div>
+
+<!-- REPORT VIEWER MODAL -->
+<div id="reportModal" class="modal hidden">
+  <div class="modal-box modal-xl">
+    <button class="close" id="closeReportModal">×</button>
+    <div class="report-header">
+      <div>
+        <span class="eyebrow">OFFICIAL GOVERNANCE REPORT</span>
+        <h2 id="reportModalTitle">Monthly Monitoring Summary</h2>
+        <p class="sub" id="reportModalSubtitle">Generated for Department of Social Justice & Empowerment</p>
+      </div>
+      <div class="report-modal-actions">
+        <button class="btn secondary" id="downloadReportCsvBtn">⇩ Export to CSV</button>
+        <button class="btn primary" onclick="window.print()">🖨 Print / Save PDF</button>
+      </div>
+    </div>
+    <div id="reportModalContent" class="report-modal-content"></div>
+  </div>
+</div>
+
+<!-- COMMAND PALETTE / QUICK SEARCH MODAL -->
+<div id="commandPalette" class="modal hidden">
+  <div class="palette-box">
+    <div class="palette-input-wrap">
+      <span class="palette-icon">⌕</span>
+      <input type="text" id="paletteSearch" placeholder="Type a command or search projects, alerts, inspections... (Esc to close)" autocomplete="off">
+    </div>
+    <div id="paletteResults" class="palette-results"></div>
+    <div class="palette-footer">
+      <span><b>↑↓</b> to navigate</span>
+      <span><b>Enter</b> to select</span>
+      <span><b>Esc</b> to close</span>
+    </div>
+  </div>
+</div>
+
+<!-- SIMULATE ALERT MODAL -->
+<div id="simulateAlertModal" class="modal hidden">
+  <div class="modal-box">
+    <button class="close" id="closeAlertModal">×</button>
+    <span class="eyebrow">OPERATIONAL EXCEPTION</span>
+    <h2>Simulate Anomaly Alert</h2>
+    <p class="sub">Trigger a synthetic alert to test incident response and dispatch workflows.</p>
+    <form id="simulateAlertForm">
+      <label>Target Project
+        <select id="simAlertProject" required></select>
+      </label>
+      <label>Severity Level
+        <select id="simAlertSeverity" required>
+          <option value="CRITICAL">CRITICAL (Immediate Action)</option>
+          <option value="HIGH">HIGH (Anomaly Detected)</option>
+          <option value="MEDIUM" selected>MEDIUM (Notice / Due)</option>
+        </select>
+      </label>
+      <label>Alert Title
+        <input id="simAlertTitle" required placeholder="e.g. Biometric verification discrepancy">
+      </label>
+      <label>Incident Details
+        <textarea id="simAlertMessage" required placeholder="Describe the detected operational anomaly..."></textarea>
+      </label>
+      <div class="modal-actions">
+        <button type="button" class="btn secondary" id="cancelAlertModal">Cancel</button>
+        <button type="submit" class="btn primary">Trigger Alert</button>
+      </div>
+    </form>
+  </div>
+</div>
 
 <div id="toast"></div>
 <script src="app.js"></script>
