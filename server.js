@@ -2,15 +2,23 @@ const express = require("express");
 const cors = require("cors");
 const path = require("path");
 const fs = require("fs");
+const os = require("os");
 const multer = require("multer");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const dataDir = path.join(__dirname, "data");
+const isVercel = Boolean(process.env.VERCEL);
+
+// On Vercel serverless functions, the root filesystem is read-only except for os.tmpdir() (/tmp)
+const dataDir = isVercel ? path.join(os.tmpdir(), "dosje-data") : path.join(__dirname, "data");
 const uploadDir = path.join(dataDir, "uploads");
 const dbFile = path.join(dataDir, "dosje-store.json");
 
-fs.mkdirSync(uploadDir, { recursive: true });
+try {
+  fs.mkdirSync(uploadDir, { recursive: true });
+} catch (e) {
+  console.warn("Storage directory notice:", e.message);
+}
 
 const initialData = {
   users: [
@@ -35,13 +43,13 @@ const initialData = {
 };
 
 function loadStore() {
-  if (fs.existsSync(dbFile)) {
-    try {
+  try {
+    if (fs.existsSync(dbFile)) {
       const parsed = JSON.parse(fs.readFileSync(dbFile, "utf8"));
       return { ...initialData, ...parsed };
-    } catch (e) {
-      console.error("Failed to parse store file, resetting to initial", e);
     }
+  } catch (e) {
+    console.warn("Notice reading store file:", e.message);
   }
   saveStore(initialData);
   return JSON.parse(JSON.stringify(initialData));
@@ -51,7 +59,7 @@ function saveStore(data) {
   try {
     fs.writeFileSync(dbFile, JSON.stringify(data, null, 2), "utf8");
   } catch (e) {
-    console.error("Failed to save store file", e);
+    console.warn("Notice saving store file:", e.message);
   }
 }
 
@@ -63,9 +71,19 @@ app.use(express.urlencoded({ extended: true }));
 app.use("/uploads", express.static(uploadDir));
 app.use(express.static(path.join(__dirname, "public")));
 
-const upload = multer({ dest: uploadDir });
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, uploadDir),
+  filename: (req, file, cb) => cb(null, `${Date.now()}-${file.originalname || "evidence.jpg"}`)
+});
+const upload = multer({ storage });
 const now = () => new Date().toISOString();
 
+// Root route fallback
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "index.html"));
+});
+
+// Authentication endpoints
 app.post("/api/login", (req, res) => {
   const { email, password } = req.body;
   const user = db.users.find(u => u.email === email && u.password === password);
@@ -90,6 +108,7 @@ app.post("/api/register", (req, res) => {
   res.json({ user: safeUser });
 });
 
+// Dashboard metrics & alerts
 app.get("/api/dashboard", (req, res) => {
   const projects = [...db.projects].sort((a, b) => b.risk_score - a.risk_score);
   const alerts = db.alerts
@@ -113,6 +132,7 @@ app.get("/api/dashboard", (req, res) => {
   });
 });
 
+// Inspections
 app.get("/api/inspections", (req, res) => {
   const list = [...db.inspections]
     .sort((a, b) => b.id - a.id)
@@ -159,6 +179,7 @@ app.post("/api/inspections", upload.single("evidence"), (req, res) => {
   res.json({ id });
 });
 
+// Alerts resolution
 app.post("/api/alerts/:id/resolve", (req, res) => {
   const targetId = Number(req.params.id);
   const alert = db.alerts.find(a => a.id === targetId);
@@ -169,6 +190,11 @@ app.post("/api/alerts/:id/resolve", (req, res) => {
   res.json({ ok: true });
 });
 
-app.listen(PORT, () => {
-  console.log(`DoSJE Nexus running on http://localhost:${PORT}`);
-});
+// Only listen when running standalone directly (not when required by Vercel serverless function)
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`DoSJE Nexus running on http://localhost:${PORT}`);
+  });
+}
+
+module.exports = app;
