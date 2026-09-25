@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>DoSJE Nexus | Project Monitoring</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- AUTH -->
+<div id="auth" class="auth">
+  <div class="auth-visual">
+    <div class="visual-top"><div class="logo">D</div><span>DoSJE <b>NEXUS</b></span></div>
+    <div class="visual-copy">
+      <div class="eyebrow light">CENTRALIZED PROJECT MONITORING</div>
+      <h1>One command centre.<br><span>Complete visibility.</span></h1>
+      <p>Real-time monitoring, surprise inspections, CCTV surveillance, evidence capture and AI-assisted alerts in one secure workspace.</p>
+      <div class="feature-pills">
+        <span>◉ Live CCTV</span><span>✦ AI Insights</span><span>⌖ Geo Evidence</span><span>✓ Inspections</span>
+      </div>
+    </div>
+    <div class="visual-footer">Department of Social Justice & Empowerment</div>
+  </div>
+
+  <div class="auth-panel">
+    <div class="mobile-brand"><div class="logo">D</div><b>DoSJE NEXUS</b></div>
+
+    <div id="loginBox" class="auth-box">
+      <div class="eyebrow">SECURE ACCESS</div>
+      <h2>Welcome back</h2>
+      <p class="sub">Sign in to your monitoring workspace.</p>
+      <form id="loginForm">
+        <label>Email address<input id="loginEmail" type="email" placeholder="you@example.gov.in" required></label>
+        <label>Password<div class="password"><input id="loginPassword" type="password" placeholder="Enter password" required><button type="button" data-eye="loginPassword">◉</button></div></label>
+        <div class="form-row"><label class="check"><input type="checkbox"> Remember me</label><button type="button" class="text-btn" id="forgot">Forgot password?</button></div>
+        <button class="btn primary wide">Sign in <span>→</span></button>
+        <div id="loginError" class="form-error"></div>
+      </form>
+      <div class="switch">New to the portal? <button id="showRegister">Create an account</button></div>
+      <div class="demo-login">Demo: <b>admin@dosje.gov.in</b> / <b>admin123</b></div>
+    </div>
+
+    <div id="registerBox" class="auth-box hidden">
+      <div class="eyebrow">NEW USER REGISTRATION</div>
+      <h2>Create account</h2>
+      <p class="sub">Register for access to the monitoring portal.</p>
+      <form id="registerForm">
+        <div class="two-col">
+          <label>Full name<input id="regName" required placeholder="Full name"></label>
+          <label>Mobile number<input id="regMobile" required placeholder="+91"></label>
+        </div>
+        <label>Official email<input id="regEmail" type="email" required placeholder="name@department.gov.in"></label>
+        <label>Role<select id="regRole" required><option value="">Select role</option><option>Department Official</option><option>PMU Team</option><option>Inspection Team</option><option>State Authority</option><option>District Authority</option></select></label>
+        <label>Password<div class="password"><input id="regPassword" type="password" minlength="6" required placeholder="Minimum 6 characters"><button type="button" data-eye="regPassword">◉</button></div></label>
+        <label class="check"><input id="regTerms" type="checkbox" required> I agree to the portal access and data-use terms.</label>
+        <button class="btn primary wide">Create account <span>→</span></button>
+        <div id="registerMsg" class="form-error"></div>
+      </form>
+      <div class="switch">Already registered? <button id="showLogin">Back to sign in</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app" class="app hidden">
+  <aside class="sidebar">
+    <div class="brand-area"><div class="logo">D</div><div><b>DoSJE <span>NEXUS</span></b><small>Monitoring Platform</small></div></div>
+    <nav>
+      <div class="nav-caption">MAIN</div>
+      <a href="#home" class="nav-item" data-route="home"><span class="nav-icon">⌂</span><span>Home</span></a>
+      <a href="#projects" class="nav-item" data-route="projects"><span class="nav-icon">▦</span><span>Projects</span></a>
+      <a href="#cctv" class="nav-item" data-route="cctv"><span class="nav-icon">◉</span><span>Live CCTV</span><i class="live-dot"></i></a>
+      <a href="#inspections" class="nav-item" data-route="inspections"><span class="nav-icon">✓</span><span>Inspections</span></a>
+      <a href="#analytics" class="nav-item" data-route="analytics"><span class="nav-icon">⌁</span><span>AI Analytics</span></a>
+      <a href="#alerts" class="nav-item" data-route="alerts"><span class="nav-icon">⚑</span><span>Alerts</span><em id="alertCount">0</em></a>
+      <div class="nav-caption">OPERATIONS</div>
+      <a href="#vc" class="nav-item" data-route="vc"><span class="nav-icon">◌</span><span>Random VC</span></a>
+      <a href="#reports" class="nav-item" data-route="reports"><span class="nav-icon">▤</span><span>Reports</span></a>
+    </nav>
+    <div class="sidebar-bottom">
+      <div class="secure"><span>●</span><div><b>System secure</b><small>Encrypted session</small></div></div>
+      <button id="logout" class="logout">↪ <span>Sign out</span></button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <button id="mobileMenu" class="mobile-menu">☰</button>
+      <div class="breadcrumbs">DoSJE <span>/</span> <b id="routeName">Home</b></div>
+      <div class="top-actions">
+        <div class="live-status"><i></i> LIVE <span id="clock"></span></div>
+        <button class="top-icon">⌕</button>
+        <button class="top-icon" id="notificationBtn">♢</button>
+        <div class="user-menu"><div class="avatar" id="avatar">DA</div><div><b id="userName">Administrator</b><small id="userRole">Department Official</small></div></div>
+      </div>
+    </header>
+
+    <div class="content">
+      <!-- HOME -->
+      <section class="page" data-page="home">
+        <div class="welcome">
+          <div><span class="eyebrow light">LIVE COMMAND CENTRE</span><h1>Good morning, <span id="welcomeName">Administrator</span>.</h1><p>Here is today's operational overview across schemes, projects and field inspections.</p></div>
+          <button class="btn teal" id="randomInspection">✦ Assign Random Inspection</button>
+        </div>
+        <div class="stat-grid" id="stats"></div>
+        <div class="home-grid">
+          <div class="panel">
+            <div class="panel-head"><div><h3>Project risk overview</h3><p>Sites that need closer attention</p></div><a href="#projects">View all →</a></div>
+            <div id="riskRows"></div>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><div><h3>Priority alerts</h3><p>Latest operational exceptions</p></div><a href="#alerts">View all →</a></div>
+            <div id="homeAlerts"></div>
+          </div>
+        </div>
+        <div class="quick-grid">
+          <a href="#projects" class="quick"><span>▦</span><div><b>Explore projects</b><small>Open project directory</small></div><strong>→</strong></a>
+          <a href="#cctv" class="quick"><span>◉</span><div><b>Open CCTV wall</b><small>Check connected streams</small></div><strong>→</strong></a>
+          <a href="#inspections" class="quick"><span>✓</span><div><b>Field inspections</b><small>Review assignments</small></div><strong>→</strong></a>
+          <a href="#analytics" class="quick"><span>⌁</span><div><b>View AI insights</b><small>Review anomaly signals</small></div><strong>→</strong></a>
+        </div>
+      </section>
+
+      <!-- PROJECTS -->
+      <section class="page hidden" data-page="projects">
+        <div class="section-title"><div><span class="eyebrow">PROJECT DIRECTORY</span><h1>Projects & Institutes</h1><p>Search projects, beneficiaries, scheme status and monitoring risk.</p></div><button class="btn primary">＋ Add project</button></div>
+        <div class="toolbar"><div class="search"><span>⌕</span><input id="projectSearch" placeholder="Search project, state or district"></div><select id="riskFilter"><option value="">All risk levels</option><option value="high">High risk</option><option value="medium">Medium risk</option><option value="low">Low risk</option></select><select><option>All schemes</option><option>Scheme A</option><option>Scheme B</option><option>Scheme C</option></select></div>
+        <div id="projectCards" class="project-grid"></div>
+      </section>
+
+      <!-- CCTV -->
+      <section class="page hidden" data-page="cctv">
+        <div class="section-title"><div><span class="eyebrow">SURVEILLANCE NETWORK</span><h1>Live CCTV Monitoring</h1><p>Connected camera endpoints across participating projects.</p></div><div class="live-badge"><i></i> Live network</div></div>
+        <div class="cctv-toolbar"><div class="camera-summary"><b id="liveCount">0</b><span>streams online</span></div><button class="btn secondary" id="refreshCctv">↻ Refresh streams</button></div>
+        <div id="cctvGrid" class="cctv-grid"></div>
+      </section>
+
+      <!-- INSPECTIONS -->
+      <section class="page hidden" data-page="inspections">
+        <div class="section-title"><div><span class="eyebrow">FIELD OPERATIONS</span><h1>Inspection Management</h1><p>Random assignment, mobile inspection and geo-tagged evidence.</p></div><button class="btn primary" id="newInspection">＋ New inspection</button></div>
+        <div class="inspection-cards"><div class="mini-panel"><span>Pending</span><b id="pendingCount">0</b><small>Assignments waiting</small></div><div class="mini-panel"><span>Completed</span><b id="completedCount">0</b><small>This monitoring cycle</small></div><div class="mini-panel"><span>Geo evidence</span><b id="geoCount">0%</b><small>Reports with location</small></div></div>
+        <div class="panel table-wrap"><div class="panel-head"><div><h3>Inspection assignments</h3><p>Most recent first</p></div><button class="btn secondary" id="exportInspections">⇩ Export</button></div><table><thead><tr><th>PROJECT</th><th>OFFICER</th><th>DATE</th><th>STATUS</th><th>GEO</th><th>SCORE</th></tr></thead><tbody id="inspectionTable"></tbody></table></div>
+      </section>
+
+      <!-- ANALYTICS -->
+      <section class="page hidden" data-page="analytics">
+        <div class="section-title"><div><span class="eyebrow">INTELLIGENCE LAYER</span><h1>AI Analytics</h1><p>Early-warning indicators from attendance, CCTV and inspection signals.</p></div></div>
+        <div class="analytics-grid"><div class="panel"><div class="panel-head"><div><h3>Risk by project</h3><p>Current portfolio risk score</p></div></div><div id="riskChart"></div></div><div class="panel"><h3>Monitoring intelligence</h3><div class="ai-score"><div class="score-ring" id="avgRisk">42</div><div><b>Portfolio risk index</b><p>Calculated from configured monitoring signals.</p></div></div><div class="insight"><span>✦</span><div><b>Attendance anomaly</b><p>High variance between expected and present beneficiaries can trigger inspection review.</p></div></div><div class="insight"><span>◉</span><div><b>CCTV heartbeat</b><p>Offline camera endpoints are surfaced as operational exceptions.</p></div></div><div class="insight"><span>⌖</span><div><b>Inspection coverage</b><p>Geo-tagged evidence improves traceability of field reports.</p></div></div></div></div>
+      </section>
+
+      <!-- ALERTS -->
+      <section class="page hidden" data-page="alerts">
+        <div class="section-title"><div><span class="eyebrow">EXCEPTIONS</span><h1>Alerts & Actions</h1><p>Resolve operational anomalies and keep an auditable trail.</p></div><button class="btn secondary" id="refreshAlerts">↻ Refresh</button></div>
+        <div id="alertCards" class="alerts-list"></div>
+      </section>
+
+      <!-- VC -->
+      <section class="page hidden" data-page="vc">
+        <div class="section-title"><div><span class="eyebrow">RANDOM VERIFICATION</span><h1>Random Video Conference</h1><p>Initiate a verification session with project staff and beneficiaries.</p></div><button class="btn primary" id="startVc">Start random VC</button></div>
+        <div class="vc-layout"><div class="vc-stage"><div class="vc-grid"><div class="vc-person main"><div class="person">PI</div><b>Project Incharge</b><small>Camera ready</small></div><div class="vc-person"><div class="person">ST</div><b>Staff</b><small>Waiting to join</small></div><div class="vc-person"><div class="person">BE</div><b>Beneficiary</b><small>Waiting to join</small></div></div><div class="vc-controls"><button>🎙</button><button>▣</button><button class="end">End call</button></div></div><div class="panel checklist"><h3>Verification checklist</h3><label><input type="checkbox"> Confirm identity & location</label><label><input type="checkbox"> Confirm beneficiary presence</label><label><input type="checkbox"> Verify service delivery</label><label><input type="checkbox"> Record observations</label><div class="vc-note">VC integration point: connect your approved WebRTC / Teams / Zoom / enterprise provider here.</div></div></div>
+      </section>
+
+      <!-- REPORTS -->
+      <section class="page hidden" data-page="reports">
+        <div class="section-title"><div><span class="eyebrow">GOVERNANCE OUTPUTS</span><h1>Reports</h1><p>Generate monitoring summaries for review, compliance and governance.</p></div><button class="btn primary" onclick="window.print()">⇩ Print / Export</button></div>
+        <div class="report-grid"><div class="report-card"><div class="report-icon">▤</div><h3>Monthly monitoring</h3><p>Projects, inspections, alerts and operational coverage.</p><button class="text-btn">Generate report →</button></div><div class="report-card"><div class="report-icon">✓</div><h3>Inspection compliance</h3><p>Assignments, completion, scores and geo-evidence.</p><button class="text-btn">Generate report →</button></div><div class="report-card"><div class="report-icon">⌁</div><h3>AI anomaly summary</h3><p>Attendance variance and monitoring anomaly signals.</p><button class="text-btn">Generate report →</button></div></div>
+      </section>
+    </div>
+  </main>
+</div>
+
+<!-- INSPECTION MODAL -->
+<div id="inspectionModal" class="modal hidden"><div class="modal-box"><button class="close" id="closeModal">×</button><span class="eyebrow">MOBILE INSPECTION</span><h2>Submit inspection</h2><p class="sub">Capture findings and location evidence from the field.</p><form id="inspectionForm"><label>Project<select id="inspectProject" required></select></label><label>Officer<input id="inspectOfficer" required></label><label>Findings<textarea id="findings" placeholder="Enter inspection observations…"></textarea></label><div class="geo-box"><div><b>Geo-tag</b><small id="geoText">Location not captured</small></div><button type="button" class="btn secondary" id="captureGeo">⌖ Capture location</button></div><label>Evidence<input id="evidence" type="file" accept="image/*,video/*"></label><label>Inspection score<input id="score" type="number" min="0" max="100" value="80"></label><button class="btn primary wide">Submit inspection</button></form></div></div>
+
+<div id="toast"></div>
+<script src="app.js"></script>
+</body>
+</html>
