@@ -26,7 +26,13 @@ async function loadData(){
 }
 function renderAll(){renderHome();renderProjects();renderCctv();renderInspections();renderAnalytics();renderAlerts();fillProjectSelect()}
 function renderHome(){
- const m=data.dashboard.metrics, stats=[["Projects",m.total,"Total onboarded","▦"],["Active",m.active,"Currently active","✓"],["CCTV Live",m.live,"Connected streams","◉"],["Pending",m.pending,"Assigned / scheduled","⌖"],["Risk index",m.avgRisk,"Portfolio average","⌁"]];
+ const m=data.dashboard.metrics, stats=[
+   ["Projects",m.total,"Total onboarded",`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>`],
+   ["Active",m.active,"Currently active",`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`],
+   ["CCTV Live",m.live,"Connected streams",`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 7l-7 5 7 5V7z"></path><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg>`],
+   ["Pending",m.pending,"Assigned / scheduled",`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>`],
+   ["Risk index",m.avgRisk,"Portfolio average",`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>`]
+ ];
  $("#stats").innerHTML=stats.map(x=>`<div class="stat"><div class="stat-top"><span>${x[0]}</span><span class="stat-icon">${x[3]}</span></div><b>${x[1]}</b><small>${x[2]}</small></div>`).join("");
  $("#riskRows").innerHTML=data.projects.slice().sort((a,b)=>b.risk_score-a.risk_score).slice(0,5).map(p=>`<div class="risk-row"><div><span class="name">${p.name}</span><small>${p.state} · ${p.district}</small></div><div class="bar"><span style="width:${p.risk_score}%;background:${p.risk_score>=60?"#d74259":p.risk_score>=35?"#d58b1c":"#15966f"}"></span></div><b class="${riskClass(p.risk_score)}">${p.risk_score}</b></div>`).join("");
  $("#homeAlerts").innerHTML=(data.dashboard.alerts||demoAlerts).slice(0,4).map(a=>`<div class="alert-row"><div class="alert-icon">!</div><div><b>${a.title}</b><p>${a.message}</p><small>${a.project_name||"System"} · Just now</small></div></div>`).join("");
@@ -96,7 +102,14 @@ $("#refreshCctv").onclick=()=>{renderCctv();toast("CCTV status refreshed")};
 $("#refreshAlerts").onclick=()=>loadData();
 $("#projectSearch").oninput=renderProjects;$("#riskFilter").onchange=renderProjects;
 $("#exportInspections").onclick=()=>window.print();
-setInterval(()=>$("#clock").textContent=new Date().toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"}),1000);
+const updateClock=()=>$("#clock").textContent=new Date().toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"}).toLowerCase();
+updateClock();
+setInterval(updateClock,1000);
+
+if(!localStorage.getItem("dosjeUser")){
+ localStorage.setItem("dosjeUser",JSON.stringify({name:"Department Administrator",role:"Department Official",email:"admin@dosje.gov.in"}));
+}
+
 function boot(){
  const u=user();if(!u)return;
  $("#auth").classList.add("hidden");$("#app").classList.remove("hidden");
