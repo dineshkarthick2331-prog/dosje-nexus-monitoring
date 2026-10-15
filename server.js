@@ -22,8 +22,9 @@ try {
 
 const initialData = {
   users: [
-    { id: 1, name: "Department Administrator", email: "admin@dosje.gov.in", password: "admin123", role: "Department Official", mobile: "" },
-    { id: 2, name: "PMU Officer", email: "pmu@dosje.gov.in", password: "pmu123", role: "PMU Team", mobile: "" }
+    { id: 1, name: "Department Administrator", email: "admin@dosje.gov.in", password: "admin123", role: "Administrator", mobile: "+91 98765 43210" },
+    { id: 2, name: "Field Officer Ramesh", email: "user@dosje.gov.in", password: "user123", role: "Field Officer", mobile: "+91 98765 12345" },
+    { id: 3, name: "PMU Officer Priya", email: "pmu@dosje.gov.in", password: "pmu123", role: "PMU Team", mobile: "+91 98765 67890" }
   ],
   projects: [
     { id: 1, name: "Asha Rehabilitation Centre", scheme: "Scheme A", state: "Tamil Nadu", district: "Tiruvallur", status: "Active", beneficiaries: 148, cctv_status: "Live", risk_score: 21, last_inspection: "2026-09-18" },
@@ -86,7 +87,7 @@ app.get("/", (req, res) => {
 // Authentication endpoints
 app.post("/api/login", (req, res) => {
   const { email, password } = req.body;
-  const user = db.users.find(u => u.email === email && u.password === password);
+  const user = db.users.find(u => (u.email || "").toLowerCase() === (email || "").trim().toLowerCase() && u.password === password);
   if (!user) return res.status(401).json({ error: "Invalid credentials" });
   const { password: _, ...safeUser } = user;
   res.json({ user: safeUser });
@@ -97,15 +98,20 @@ app.post("/api/register", (req, res) => {
   if (!name || !email || !password || !role) {
     return res.status(400).json({ error: "All required fields must be completed" });
   }
-  if (db.users.some(u => u.email === email)) {
+  if (db.users.some(u => (u.email || "").toLowerCase() === email.trim().toLowerCase())) {
     return res.status(409).json({ error: "An account with this email already exists" });
   }
   const id = db.users.length ? Math.max(...db.users.map(u => u.id)) + 1 : 1;
-  const newUser = { id, name, email, password, role, mobile: mobile || "" };
+  const newUser = { id, name, email: email.trim(), password, role, mobile: mobile || "" };
   db.users.push(newUser);
   saveStore(db);
   const { password: _, ...safeUser } = newUser;
   res.json({ user: safeUser });
+});
+
+app.get("/api/users", (req, res) => {
+  const safeUsers = db.users.map(({ password: _, ...u }) => u);
+  res.json(safeUsers);
 });
 
 // Dashboard metrics & alerts
@@ -145,7 +151,7 @@ app.get("/api/inspections", (req, res) => {
 
 app.post("/api/inspections/assign-random", (req, res) => {
   const p = db.projects[Math.floor(Math.random() * db.projects.length)];
-  const eligible = db.users.filter(u => u.role && (u.role.includes("PMU") || u.role.includes("Inspection")));
+  const eligible = db.users.filter(u => u.role && (u.role.includes("PMU") || u.role.includes("Inspection") || u.role.includes("Field")));
   const officer = eligible.length ? eligible[Math.floor(Math.random() * eligible.length)].name : "Inspection Officer";
   const id = db.inspections.length ? Math.max(...db.inspections.map(i => i.id)) + 1 : 1;
   const newInspection = {

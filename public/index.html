@@ -30,18 +30,56 @@
     <div class="mobile-brand"><div class="logo">D</div><b>DoSJE NEXUS</b></div>
 
     <div id="loginBox" class="auth-box">
-      <div class="eyebrow">SECURE ACCESS</div>
-      <h2>Welcome back</h2>
-      <p class="sub">Sign in to your monitoring workspace.</p>
+      <div class="eyebrow">CENTRALIZED MONITORING ACCESS</div>
+      <h2>Portal Sign In</h2>
+      <p class="sub">Select your account portal or enter your official credentials.</p>
+
+      <div class="auth-role-tabs">
+        <button type="button" class="auth-role-tab active" id="tabAdmin" data-role-tab="admin">
+          <span class="tab-icon">🛡️</span>
+          <span class="tab-label">Administrator</span>
+        </button>
+        <button type="button" class="auth-role-tab" id="tabUser" data-role-tab="user">
+          <span class="tab-icon">👤</span>
+          <span class="tab-label">Officer / User</span>
+        </button>
+      </div>
+
+      <div class="role-mode-indicator" id="roleModeIndicator">
+        <span class="role-pill admin" id="rolePill">🛡️ Central Administrator Portal</span>
+        <small id="roleDesc">Full administrative authority, institution onboarding, random inspection dispatch, CCTV overrides.</small>
+      </div>
+
       <form id="loginForm">
-        <label>Email address<input id="loginEmail" type="email" placeholder="you@example.gov.in" required></label>
-        <label>Password<div class="password"><input id="loginPassword" type="password" placeholder="Enter password" required><button type="button" data-eye="loginPassword">◉</button></div></label>
-        <div class="form-row"><label class="check"><input type="checkbox"> Remember me</label><button type="button" class="text-btn" id="forgot">Forgot password?</button></div>
-        <button class="btn primary wide">Sign in <span>→</span></button>
+        <label>Email address<input id="loginEmail" type="email" placeholder="admin@dosje.gov.in" value="admin@dosje.gov.in" required></label>
+        <label>Password<div class="password"><input id="loginPassword" type="password" placeholder="Enter password" value="admin123" required><button type="button" data-eye="loginPassword">◉</button></div></label>
+        <div class="form-row"><label class="check"><input type="checkbox" id="rememberMe" checked> Remember me</label><button type="button" class="text-btn" id="forgot">Need help?</button></div>
+        <button class="btn primary wide" id="loginSubmitBtn">Sign in as Administrator <span>→</span></button>
         <div id="loginError" class="form-error"></div>
       </form>
+
+      <div class="quick-login-section">
+        <div class="quick-divider"><span>OR ONE-CLICK DEMO LOGIN</span></div>
+        <div class="quick-login-grid">
+          <button type="button" class="quick-card admin" id="quickLoginAdmin" title="1-Click Login as Admin">
+            <span class="qc-badge">ADMIN</span>
+            <b>Dept. Administrator</b>
+            <small>admin@dosje.gov.in · admin123</small>
+          </button>
+          <button type="button" class="quick-card user" id="quickLoginUser" title="1-Click Login as Field Officer">
+            <span class="qc-badge">USER</span>
+            <b>Field Officer Ramesh</b>
+            <small>user@dosje.gov.in · user123</small>
+          </button>
+          <button type="button" class="quick-card pmu" id="quickLoginPmu" title="1-Click Login as PMU Officer">
+            <span class="qc-badge">PMU</span>
+            <b>PMU Officer Priya</b>
+            <small>pmu@dosje.gov.in · pmu123</small>
+          </button>
+        </div>
+      </div>
+
       <div class="switch">New to the portal? <button id="showRegister">Create an account</button></div>
-      <div class="demo-login">Demo: <b>admin@dosje.gov.in</b> / <b>admin123</b></div>
     </div>
 
     <div id="registerBox" class="auth-box hidden">
@@ -51,10 +89,25 @@
       <form id="registerForm">
         <div class="two-col">
           <label>Full name<input id="regName" required placeholder="Full name"></label>
-          <label>Mobile number<input id="regMobile" required placeholder="+91"></label>
+          <label>Mobile number<input id="regMobile" required placeholder="+91 98765 00000"></label>
         </div>
         <label>Official email<input id="regEmail" type="email" required placeholder="name@department.gov.in"></label>
-        <label>Role<select id="regRole" required><option value="">Select role</option><option>Department Official</option><option>PMU Team</option><option>Inspection Team</option><option>State Authority</option><option>District Authority</option></select></label>
+        <label>Role / Access Level
+          <select id="regRole" required>
+            <option value="">Select role</option>
+            <option value="Administrator">Department Administrator (Admin Access)</option>
+            <option value="Field Officer" selected>Field Officer (User Access)</option>
+            <option value="PMU Team">PMU Team Member (User Access)</option>
+            <option value="Inspection Team">Inspection Team (User Access)</option>
+            <option value="State Authority">State Authority</option>
+            <option value="District Authority">District Authority</option>
+          </select>
+        </label>
+        <div id="adminPinWrap" class="hidden">
+          <label>Admin Security Passkey <small>(Required for Admin access)</small>
+            <input id="regAdminPin" placeholder="Enter ADMIN2026 for demo verification">
+          </label>
+        </div>
         <label>Password<div class="password"><input id="regPassword" type="password" minlength="6" required placeholder="Minimum 6 characters"><button type="button" data-eye="regPassword">◉</button></div></label>
         <label class="check"><input id="regTerms" type="checkbox" required> I agree to the portal access and data-use terms.</label>
         <button class="btn primary wide">Create account <span>→</span></button>
@@ -82,8 +135,14 @@
       <a href="#reports" class="nav-item" data-route="reports"><span class="nav-icon">▤</span><span>Reports</span></a>
     </nav>
     <div class="sidebar-bottom">
-      <div class="secure"><span>●</span><div><b>System secure</b><small>Encrypted session</small></div></div>
-      <button id="logout" class="logout">↪ <span>Sign out</span></button>
+      <div class="secure">
+        <span id="sessionStatusDot">●</span>
+        <div>
+          <b id="sidebarRoleLabel">Admin Session</b>
+          <small id="sidebarUserEmail">admin@dosje.gov.in</small>
+        </div>
+      </div>
+      <button id="logout" class="logout" title="Sign out of current account">↪ <span>Sign out</span></button>
     </div>
   </aside>
 
@@ -113,7 +172,61 @@
           </div>
         </div>
         <button class="top-icon" id="themeToggle" title="Toggle Dark/Light Mode">◐</button>
-        <div class="user-menu"><div class="avatar" id="avatar">DA</div><div><b id="userName">Administrator</b><small id="userRole">Department Official</small></div></div>
+        
+        <!-- User Menu with Account Switcher -->
+        <div class="user-menu-wrap">
+          <div class="user-menu" id="userMenuBtn" tabindex="0" role="button" title="View Profile & Switch Account">
+            <div class="avatar" id="avatar">DA</div>
+            <div class="user-meta">
+              <div class="user-name-row">
+                <b id="userName">Administrator</b>
+                <span class="role-badge-pill admin" id="userRoleBadge">ADMIN</span>
+              </div>
+              <small id="userRole">Department Official</small>
+            </div>
+            <span class="user-dropdown-caret">▾</span>
+          </div>
+
+          <div id="accountDropdown" class="account-dropdown hidden">
+            <div class="account-dropdown-header">
+              <span class="ad-caption">ACTIVE ACCOUNT</span>
+              <div class="ad-user-row">
+                <div class="avatar sm" id="dropdownAvatar">DA</div>
+                <div>
+                  <b id="dropdownUserName">Administrator</b>
+                  <small id="dropdownUserEmail">admin@dosje.gov.in</small>
+                </div>
+              </div>
+            </div>
+            <div class="account-dropdown-section">
+              <span class="ad-section-title">Quick Switch Account</span>
+              <button type="button" class="switch-account-item" id="switchAdminBtn">
+                <span class="switch-badge admin">ADMIN</span>
+                <div>
+                  <b>Department Administrator</b>
+                  <small>admin@dosje.gov.in</small>
+                </div>
+              </button>
+              <button type="button" class="switch-account-item" id="switchUserBtn">
+                <span class="switch-badge user">USER</span>
+                <div>
+                  <b>Field Officer Ramesh</b>
+                  <small>user@dosje.gov.in</small>
+                </div>
+              </button>
+              <button type="button" class="switch-account-item" id="switchPmuBtn">
+                <span class="switch-badge pmu">PMU</span>
+                <div>
+                  <b>PMU Officer Priya</b>
+                  <small>pmu@dosje.gov.in</small>
+                </div>
+              </button>
+            </div>
+            <div class="account-dropdown-footer">
+              <button type="button" id="dropdownLogoutBtn" class="ad-logout-btn">↪ Sign Out</button>
+            </div>
+          </div>
+        </div>
       </div>
     </header>
 

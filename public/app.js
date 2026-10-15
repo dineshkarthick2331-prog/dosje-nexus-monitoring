@@ -1820,7 +1820,29 @@ function route() {
 
 window.addEventListener("hashchange", route);
 
-// Auth Login & Register Handlers
+// Preset Default Accounts for Fast / Offline Verification
+const defaultAccounts = {
+  admin: {
+    name: "Department Administrator",
+    role: "Administrator",
+    email: "admin@dosje.gov.in",
+    password: "admin123"
+  },
+  user: {
+    name: "Field Officer Ramesh",
+    role: "Field Officer",
+    email: "user@dosje.gov.in",
+    password: "user123"
+  },
+  pmu: {
+    name: "PMU Officer Priya",
+    role: "PMU Team",
+    email: "pmu@dosje.gov.in",
+    password: "pmu123"
+  }
+};
+
+// Auth Password Visibility Toggle
 $$("[data-eye]").forEach(b => {
   b.onclick = () => {
     const input = $("#" + b.dataset.eye);
@@ -1828,6 +1850,7 @@ $$("[data-eye]").forEach(b => {
   };
 });
 
+// Switch Between Login and Registration Boxes
 $("#showRegister")?.addEventListener("click", () => {
   $("#loginBox").classList.add("hidden");
   $("#registerBox").classList.remove("hidden");
@@ -1838,37 +1861,144 @@ $("#showLogin")?.addEventListener("click", () => {
   $("#loginBox").classList.remove("hidden");
 });
 
+// Role Tab Switching (Admin vs User / Officer)
+function setAuthRoleTab(role) {
+  if (role === "admin") {
+    $("#tabAdmin")?.classList.add("active");
+    $("#tabUser")?.classList.remove("active");
+    $("#roleModeIndicator")?.classList.remove("user-mode");
+    if ($("#rolePill")) {
+      $("#rolePill").className = "role-pill admin";
+      $("#rolePill").textContent = "🛡️ Central Administrator Portal";
+    }
+    if ($("#roleDesc")) {
+      $("#roleDesc").textContent = "Full administrative authority, institution onboarding, random inspection dispatch, CCTV overrides.";
+    }
+    if ($("#loginEmail")) {
+      $("#loginEmail").value = "admin@dosje.gov.in";
+      $("#loginEmail").placeholder = "admin@dosje.gov.in";
+    }
+    if ($("#loginPassword")) {
+      $("#loginPassword").value = "admin123";
+    }
+    if ($("#loginSubmitBtn")) {
+      $("#loginSubmitBtn").innerHTML = "Sign in as Administrator <span>→</span>";
+    }
+  } else {
+    $("#tabUser")?.classList.add("active");
+    $("#tabAdmin")?.classList.remove("active");
+    $("#roleModeIndicator")?.classList.add("user-mode");
+    if ($("#rolePill")) {
+      $("#rolePill").className = "role-pill user";
+      $("#rolePill").textContent = "👤 Officer & User Portal";
+    }
+    if ($("#roleDesc")) {
+      $("#roleDesc").textContent = "Field inspections, live surveillance monitoring, spot geotag verification, and compliance logging.";
+    }
+    if ($("#loginEmail")) {
+      $("#loginEmail").value = "user@dosje.gov.in";
+      $("#loginEmail").placeholder = "user@dosje.gov.in";
+    }
+    if ($("#loginPassword")) {
+      $("#loginPassword").value = "user123";
+    }
+    if ($("#loginSubmitBtn")) {
+      $("#loginSubmitBtn").innerHTML = "Sign in as Field Officer / User <span>→</span>";
+    }
+  }
+}
+
+$("#tabAdmin")?.addEventListener("click", () => setAuthRoleTab("admin"));
+$("#tabUser")?.addEventListener("click", () => setAuthRoleTab("user"));
+
+// Login Helper Function
+async function doLoginWithCredentials(email, password) {
+  if ($("#loginError")) $("#loginError").textContent = "";
+  let loggedUser = null;
+
+  try {
+    const d = await api("/api/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password })
+    });
+    if (d?.user) {
+      loggedUser = d.user;
+    }
+  } catch (e) {
+    console.warn("API login notice:", e);
+  }
+
+  // Fallback match if offline or disconnected
+  if (!loggedUser) {
+    const match = Object.values(defaultAccounts).find(
+      a => a.email.toLowerCase() === email.toLowerCase() && a.password === password
+    );
+    if (match) {
+      const { password: _, ...safe } = match;
+      loggedUser = safe;
+    }
+  }
+
+  if (loggedUser) {
+    localStorage.setItem("dosjeUser", JSON.stringify(loggedUser));
+    toast(`Authenticated as ${loggedUser.name} (${loggedUser.role})`, "✓");
+    boot();
+  } else {
+    if ($("#loginError")) {
+      $("#loginError").textContent = "Invalid credentials. Please use the quick demo login buttons below.";
+    }
+  }
+}
+
+// Login Form Submit Event
 $("#loginForm")?.addEventListener("submit", async e => {
   e.preventDefault();
-  $("#loginError").textContent = "";
   const email = $("#loginEmail").value.trim();
   const password = $("#loginPassword").value;
+  await doLoginWithCredentials(email, password);
+});
 
-  const d = await api("/api/login", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password })
-  });
+// Quick 1-Click Login Cards
+$("#quickLoginAdmin")?.addEventListener("click", () => {
+  setAuthRoleTab("admin");
+  doLoginWithCredentials("admin@dosje.gov.in", "admin123");
+});
 
-  if (d?.user) {
-    localStorage.setItem("dosjeUser", JSON.stringify(d.user));
-  } else if (email === "admin@dosje.gov.in" && password === "admin123") {
-    localStorage.setItem("dosjeUser", JSON.stringify({ name: "Department Administrator", role: "Department Official", email }));
-  } else {
-    $("#loginError").textContent = "Invalid credentials. Use demo: admin@dosje.gov.in / admin123";
-    return;
-  }
-  boot();
+$("#quickLoginUser")?.addEventListener("click", () => {
+  setAuthRoleTab("user");
+  doLoginWithCredentials("user@dosje.gov.in", "user123");
+});
+
+$("#quickLoginPmu")?.addEventListener("click", () => {
+  setAuthRoleTab("user");
+  doLoginWithCredentials("pmu@dosje.gov.in", "pmu123");
+});
+
+// Registration Role Change & Form Submit
+$("#regRole")?.addEventListener("change", e => {
+  const isAdm = e.target.value === "Administrator";
+  $("#adminPinWrap")?.classList.toggle("hidden", !isAdm);
 });
 
 $("#registerForm")?.addEventListener("submit", async e => {
   e.preventDefault();
   $("#registerMsg").textContent = "";
+
+  const roleVal = $("#regRole").value;
+  if (roleVal === "Administrator") {
+    const pin = ($("#regAdminPin")?.value || "").trim();
+    if (pin && pin !== "ADMIN2026") {
+      $("#registerMsg").textContent = "Invalid Admin security passkey. Use ADMIN2026 for demo.";
+      return;
+    }
+  }
+
   const payload = {
     name: $("#regName").value.trim(),
     mobile: $("#regMobile").value.trim(),
     email: $("#regEmail").value.trim(),
-    role: $("#regRole").value,
+    role: roleVal,
     password: $("#regPassword").value
   };
 
@@ -1880,42 +2010,127 @@ $("#registerForm")?.addEventListener("submit", async e => {
 
   if (d?.user) {
     localStorage.setItem("dosjeUser", JSON.stringify(d.user));
-    toast("Account created successfully");
+    toast("Account created successfully", "✓");
     boot();
   } else {
-    localStorage.setItem("dosjeUser", JSON.stringify(payload));
+    // Local session fallback
+    const { password: _, ...safeUser } = payload;
+    localStorage.setItem("dosjeUser", JSON.stringify(safeUser));
+    toast("Account registered (offline mode)", "✓");
     boot();
   }
 });
 
-$("#logout")?.addEventListener("click", () => {
-  localStorage.removeItem("dosjeUser");
-  location.hash = "home";
-  location.reload();
+// Topbar User Menu and Account Switching Dropdown
+$("#userMenuBtn")?.addEventListener("click", e => {
+  e.stopPropagation();
+  $("#accountDropdown")?.classList.toggle("hidden");
 });
 
-// Boot application
+document.addEventListener("click", e => {
+  if (!e.target.closest(".user-menu-wrap")) {
+    $("#accountDropdown")?.classList.add("hidden");
+  }
+});
+
+$("#switchAdminBtn")?.addEventListener("click", () => {
+  $("#accountDropdown")?.classList.add("hidden");
+  doLoginWithCredentials("admin@dosje.gov.in", "admin123");
+});
+
+$("#switchUserBtn")?.addEventListener("click", () => {
+  $("#accountDropdown")?.classList.add("hidden");
+  doLoginWithCredentials("user@dosje.gov.in", "user123");
+});
+
+$("#switchPmuBtn")?.addEventListener("click", () => {
+  $("#accountDropdown")?.classList.add("hidden");
+  doLoginWithCredentials("pmu@dosje.gov.in", "pmu123");
+});
+
+// Logout Handling
+function logoutUser() {
+  localStorage.removeItem("dosjeUser");
+  state.user = null;
+  $("#app")?.classList.add("hidden");
+  $("#auth")?.classList.remove("hidden");
+  $("#accountDropdown")?.classList.add("hidden");
+  toast("Signed out successfully", "✓");
+}
+
+$("#logout")?.addEventListener("click", logoutUser);
+$("#dropdownLogoutBtn")?.addEventListener("click", logoutUser);
+
+// Boot application & Configure Role Experience
 function boot() {
-  const u = getUser();
-  if (!u) {
-    // Default demo session if none set
-    localStorage.setItem("dosjeUser", JSON.stringify({
-      name: "Department Administrator",
-      role: "Department Official",
-      email: "admin@dosje.gov.in"
-    }));
+  const curUser = getUser();
+  if (!curUser) {
+    // Present authentication screen when not logged in
+    $("#auth")?.classList.remove("hidden");
+    $("#app")?.classList.add("hidden");
+    setAuthRoleTab("admin");
+    return;
   }
 
-  const curUser = getUser();
   state.user = curUser;
 
   $("#auth")?.classList.add("hidden");
   $("#app")?.classList.remove("hidden");
 
-  $("#userName").textContent = curUser.name || "Administrator";
-  $("#userRole").textContent = curUser.role || "Department Official";
+  // Determine role classification
+  const r = (curUser.role || "").toLowerCase();
+  const isAdmin = r.includes("admin") || r.includes("department official");
+
+  // Header user info
+  $("#userName").textContent = curUser.name || (isAdmin ? "Administrator" : "Field Officer");
+  $("#userRole").textContent = curUser.role || (isAdmin ? "Administrator" : "Field Officer");
   $("#avatar").textContent = initials(curUser.name);
-  $("#welcomeName").textContent = (curUser.name || "Administrator").split(" ")[0];
+  $("#welcomeName").textContent = (curUser.name || "Officer").split(" ")[0];
+
+  // Header Role Badge
+  const badge = $("#userRoleBadge");
+  if (badge) {
+    if (isAdmin) {
+      badge.className = "role-badge-pill admin";
+      badge.textContent = "ADMIN";
+    } else if (r.includes("pmu")) {
+      badge.className = "role-badge-pill pmu";
+      badge.textContent = "PMU";
+    } else {
+      badge.className = "role-badge-pill user";
+      badge.textContent = "OFFICER";
+    }
+  }
+
+  // Account Dropdown Info
+  if ($("#dropdownAvatar")) $("#dropdownAvatar").textContent = initials(curUser.name);
+  if ($("#dropdownUserName")) $("#dropdownUserName").textContent = curUser.name || "User";
+  if ($("#dropdownUserEmail")) $("#dropdownUserEmail").textContent = curUser.email || (isAdmin ? "admin@dosje.gov.in" : "user@dosje.gov.in");
+
+  // Sidebar Session Info
+  if ($("#sidebarRoleLabel")) {
+    $("#sidebarRoleLabel").textContent = isAdmin ? "Admin Session" : "Officer Session";
+  }
+  if ($("#sidebarUserEmail")) {
+    $("#sidebarUserEmail").textContent = curUser.email || (isAdmin ? "admin@dosje.gov.in" : "user@dosje.gov.in");
+  }
+
+  // Personalize Home Page Welcome Banner
+  const welcomeEyebrow = $(".welcome .eyebrow");
+  const welcomeP = $(".welcome p");
+  if (welcomeEyebrow) {
+    welcomeEyebrow.textContent = isAdmin ? "CENTRAL COMMAND & POLICY CENTRE" : "FIELD OPERATIONS & SURVEILLANCE PORTAL";
+  }
+  if (welcomeP) {
+    welcomeP.textContent = isAdmin 
+      ? "Central administrative authority: portfolio risk tracking, random surprise inspections, and CCTV audits."
+      : "Field operations console: surprise verification audits, GPS photo evidence capture, and connected camera feeds.";
+  }
+
+  // Auto-populate logged-in user name as field inspection officer
+  if ($("#inspectOfficer")) {
+    $("#inspectOfficer").value = curUser.name || "Inspection Officer";
+  }
 
   initTheme();
   initSimulationTicker();
