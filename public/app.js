@@ -1805,6 +1805,24 @@ updateClock();
 // Routing
 function route() {
   let r = location.hash.replace("#", "") || "home";
+
+  if (r === "login" || r === "auth") {
+    $("#auth")?.classList.remove("hidden");
+    $("#app")?.classList.add("hidden");
+    setAuthRoleTab(currentAuthRole || "admin");
+    return;
+  }
+
+  // If user is not logged in, enforce auth screen
+  if (!getUser()) {
+    $("#auth")?.classList.remove("hidden");
+    $("#app")?.classList.add("hidden");
+    return;
+  }
+
+  $("#auth")?.classList.add("hidden");
+  $("#app")?.classList.remove("hidden");
+
   if (!$$(`.page[data-page='${r}']`).length) r = "home";
 
   $$(".page").forEach(p => p.classList.toggle("hidden", p.dataset.page !== r));
@@ -1823,24 +1841,29 @@ window.addEventListener("hashchange", route);
 // Preset Default Accounts for Fast / Offline Verification
 const defaultAccounts = {
   admin: {
+    username: "admin",
     name: "Department Administrator",
     role: "Administrator",
     email: "admin@dosje.gov.in",
     password: "admin123"
   },
   user: {
+    username: "user",
     name: "Field Officer Ramesh",
     role: "Field Officer",
     email: "user@dosje.gov.in",
     password: "user123"
   },
   pmu: {
+    username: "pmu",
     name: "PMU Officer Priya",
     role: "PMU Team",
     email: "pmu@dosje.gov.in",
     password: "pmu123"
   }
 };
+
+let currentAuthRole = "admin";
 
 // Auth Password Visibility Toggle
 $$("[data-eye]").forEach(b => {
@@ -1863,6 +1886,9 @@ $("#showLogin")?.addEventListener("click", () => {
 
 // Role Tab Switching (Admin vs User / Officer)
 function setAuthRoleTab(role) {
+  currentAuthRole = role;
+  const usernameInput = $("#loginUsername") || $("#loginEmail");
+
   if (role === "admin") {
     $("#tabAdmin")?.classList.add("active");
     $("#tabUser")?.classList.remove("active");
@@ -1874,9 +1900,9 @@ function setAuthRoleTab(role) {
     if ($("#roleDesc")) {
       $("#roleDesc").textContent = "Full administrative authority, institution onboarding, random inspection dispatch, CCTV overrides.";
     }
-    if ($("#loginEmail")) {
-      $("#loginEmail").value = "admin@dosje.gov.in";
-      $("#loginEmail").placeholder = "admin@dosje.gov.in";
+    if (usernameInput) {
+      usernameInput.value = "admin";
+      usernameInput.placeholder = "Enter username (e.g. admin) or email";
     }
     if ($("#loginPassword")) {
       $("#loginPassword").value = "admin123";
@@ -1895,9 +1921,9 @@ function setAuthRoleTab(role) {
     if ($("#roleDesc")) {
       $("#roleDesc").textContent = "Field inspections, live surveillance monitoring, spot geotag verification, and compliance logging.";
     }
-    if ($("#loginEmail")) {
-      $("#loginEmail").value = "user@dosje.gov.in";
-      $("#loginEmail").placeholder = "user@dosje.gov.in";
+    if (usernameInput) {
+      usernameInput.value = "user";
+      usernameInput.placeholder = "Enter username (e.g. user) or email";
     }
     if ($("#loginPassword")) {
       $("#loginPassword").value = "user123";
@@ -1911,16 +1937,17 @@ function setAuthRoleTab(role) {
 $("#tabAdmin")?.addEventListener("click", () => setAuthRoleTab("admin"));
 $("#tabUser")?.addEventListener("click", () => setAuthRoleTab("user"));
 
-// Login Helper Function
-async function doLoginWithCredentials(email, password) {
+// Login Helper Function: supports username or email
+async function doLoginWithCredentials(identifier, password) {
   if ($("#loginError")) $("#loginError").textContent = "";
   let loggedUser = null;
+  const cleanId = (identifier || "").trim();
 
   try {
     const d = await api("/api/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password })
+      body: JSON.stringify({ username: cleanId, email: cleanId, password })
     });
     if (d?.user) {
       loggedUser = d.user;
@@ -1929,10 +1956,10 @@ async function doLoginWithCredentials(email, password) {
     console.warn("API login notice:", e);
   }
 
-  // Fallback match if offline or disconnected
+  // Fallback match if offline or server disconnected
   if (!loggedUser) {
     const match = Object.values(defaultAccounts).find(
-      a => a.email.toLowerCase() === email.toLowerCase() && a.password === password
+      a => (a.username.toLowerCase() === cleanId.toLowerCase() || a.email.toLowerCase() === cleanId.toLowerCase()) && a.password === password
     );
     if (match) {
       const { password: _, ...safe } = match;
@@ -1943,10 +1970,11 @@ async function doLoginWithCredentials(email, password) {
   if (loggedUser) {
     localStorage.setItem("dosjeUser", JSON.stringify(loggedUser));
     toast(`Authenticated as ${loggedUser.name} (${loggedUser.role})`, "✓");
+    location.hash = "home";
     boot();
   } else {
     if ($("#loginError")) {
-      $("#loginError").textContent = "Invalid credentials. Please use the quick demo login buttons below.";
+      $("#loginError").textContent = "Invalid username or password. Please try demo accounts below.";
     }
   }
 }
@@ -1954,25 +1982,26 @@ async function doLoginWithCredentials(email, password) {
 // Login Form Submit Event
 $("#loginForm")?.addEventListener("submit", async e => {
   e.preventDefault();
-  const email = $("#loginEmail").value.trim();
+  const usernameInput = $("#loginUsername") || $("#loginEmail");
+  const identifier = usernameInput ? usernameInput.value.trim() : "";
   const password = $("#loginPassword").value;
-  await doLoginWithCredentials(email, password);
+  await doLoginWithCredentials(identifier, password);
 });
 
 // Quick 1-Click Login Cards
 $("#quickLoginAdmin")?.addEventListener("click", () => {
   setAuthRoleTab("admin");
-  doLoginWithCredentials("admin@dosje.gov.in", "admin123");
+  doLoginWithCredentials("admin", "admin123");
 });
 
 $("#quickLoginUser")?.addEventListener("click", () => {
   setAuthRoleTab("user");
-  doLoginWithCredentials("user@dosje.gov.in", "user123");
+  doLoginWithCredentials("user", "user123");
 });
 
 $("#quickLoginPmu")?.addEventListener("click", () => {
   setAuthRoleTab("user");
-  doLoginWithCredentials("pmu@dosje.gov.in", "pmu123");
+  doLoginWithCredentials("pmu", "pmu123");
 });
 
 // Registration Role Change & Form Submit
@@ -1996,6 +2025,7 @@ $("#registerForm")?.addEventListener("submit", async e => {
 
   const payload = {
     name: $("#regName").value.trim(),
+    username: ($("#regUsername")?.value || $("#regEmail").value.split("@")[0]).trim(),
     mobile: $("#regMobile").value.trim(),
     email: $("#regEmail").value.trim(),
     role: roleVal,
@@ -2035,23 +2065,24 @@ document.addEventListener("click", e => {
 
 $("#switchAdminBtn")?.addEventListener("click", () => {
   $("#accountDropdown")?.classList.add("hidden");
-  doLoginWithCredentials("admin@dosje.gov.in", "admin123");
+  doLoginWithCredentials("admin", "admin123");
 });
 
 $("#switchUserBtn")?.addEventListener("click", () => {
   $("#accountDropdown")?.classList.add("hidden");
-  doLoginWithCredentials("user@dosje.gov.in", "user123");
+  doLoginWithCredentials("user", "user123");
 });
 
 $("#switchPmuBtn")?.addEventListener("click", () => {
   $("#accountDropdown")?.classList.add("hidden");
-  doLoginWithCredentials("pmu@dosje.gov.in", "pmu123");
+  doLoginWithCredentials("pmu", "pmu123");
 });
 
 // Logout Handling
 function logoutUser() {
   localStorage.removeItem("dosjeUser");
   state.user = null;
+  location.hash = "login";
   $("#app")?.classList.add("hidden");
   $("#auth")?.classList.remove("hidden");
   $("#accountDropdown")?.classList.add("hidden");

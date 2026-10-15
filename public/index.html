@@ -51,10 +51,21 @@
       </div>
 
       <form id="loginForm">
-        <label>Email address<input id="loginEmail" type="email" placeholder="admin@dosje.gov.in" value="admin@dosje.gov.in" required></label>
-        <label>Password<div class="password"><input id="loginPassword" type="password" placeholder="Enter password" value="admin123" required><button type="button" data-eye="loginPassword">◉</button></div></label>
+        <label>User Name / ID
+          <input id="loginUsername" type="text" placeholder="Enter username (e.g. admin or user) or email" value="admin" autocomplete="username" required>
+        </label>
+        <label>Password
+          <div class="password">
+            <input id="loginPassword" type="password" placeholder="Enter password (e.g. admin123 or user123)" value="admin123" autocomplete="current-password" required>
+            <button type="button" data-eye="loginPassword">◉</button>
+          </div>
+        </label>
+        <div class="demo-cred-hint">
+          <span>Demo credentials:</span>
+          <code>admin / admin123</code> · <code>user / user123</code>
+        </div>
         <div class="form-row"><label class="check"><input type="checkbox" id="rememberMe" checked> Remember me</label><button type="button" class="text-btn" id="forgot">Need help?</button></div>
-        <button class="btn primary wide" id="loginSubmitBtn">Sign in as Administrator <span>→</span></button>
+        <button class="btn primary wide" id="loginSubmitBtn">Sign in with Username & Password <span>→</span></button>
         <div id="loginError" class="form-error"></div>
       </form>
 
@@ -64,17 +75,17 @@
           <button type="button" class="quick-card admin" id="quickLoginAdmin" title="1-Click Login as Admin">
             <span class="qc-badge">ADMIN</span>
             <b>Dept. Administrator</b>
-            <small>admin@dosje.gov.in · admin123</small>
+            <small>Username: <b>admin</b> · admin123</small>
           </button>
           <button type="button" class="quick-card user" id="quickLoginUser" title="1-Click Login as Field Officer">
             <span class="qc-badge">USER</span>
             <b>Field Officer Ramesh</b>
-            <small>user@dosje.gov.in · user123</small>
+            <small>Username: <b>user</b> · user123</small>
           </button>
           <button type="button" class="quick-card pmu" id="quickLoginPmu" title="1-Click Login as PMU Officer">
             <span class="qc-badge">PMU</span>
             <b>PMU Officer Priya</b>
-            <small>pmu@dosje.gov.in · pmu123</small>
+            <small>Username: <b>pmu</b> · pmu123</small>
           </button>
         </div>
       </div>
@@ -89,9 +100,12 @@
       <form id="registerForm">
         <div class="two-col">
           <label>Full name<input id="regName" required placeholder="Full name"></label>
+          <label>User Name<input id="regUsername" required placeholder="Choose a username"></label>
+        </div>
+        <div class="two-col">
+          <label>Official email<input id="regEmail" type="email" required placeholder="name@department.gov.in"></label>
           <label>Mobile number<input id="regMobile" required placeholder="+91 98765 00000"></label>
         </div>
-        <label>Official email<input id="regEmail" type="email" required placeholder="name@department.gov.in"></label>
         <label>Role / Access Level
           <select id="regRole" required>
             <option value="">Select role</option>
@@ -133,6 +147,7 @@
       <div class="nav-caption">OPERATIONS</div>
       <a href="#vc" class="nav-item" data-route="vc"><span class="nav-icon">◌</span><span>Random VC</span></a>
       <a href="#reports" class="nav-item" data-route="reports"><span class="nav-icon">▤</span><span>Reports</span></a>
+      <a href="#login" class="nav-item" data-route="login"><span class="nav-icon">🔑</span><span>Login Portal</span></a>
     </nav>
     <div class="sidebar-bottom">
       <div class="secure">

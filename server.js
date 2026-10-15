@@ -22,9 +22,9 @@ try {
 
 const initialData = {
   users: [
-    { id: 1, name: "Department Administrator", email: "admin@dosje.gov.in", password: "admin123", role: "Administrator", mobile: "+91 98765 43210" },
-    { id: 2, name: "Field Officer Ramesh", email: "user@dosje.gov.in", password: "user123", role: "Field Officer", mobile: "+91 98765 12345" },
-    { id: 3, name: "PMU Officer Priya", email: "pmu@dosje.gov.in", password: "pmu123", role: "PMU Team", mobile: "+91 98765 67890" }
+    { id: 1, username: "admin", name: "Department Administrator", email: "admin@dosje.gov.in", password: "admin123", role: "Administrator", mobile: "+91 98765 43210" },
+    { id: 2, username: "user", name: "Field Officer Ramesh", email: "user@dosje.gov.in", password: "user123", role: "Field Officer", mobile: "+91 98765 12345" },
+    { id: 3, username: "pmu", name: "PMU Officer Priya", email: "pmu@dosje.gov.in", password: "pmu123", role: "PMU Team", mobile: "+91 98765 67890" }
   ],
   projects: [
     { id: 1, name: "Asha Rehabilitation Centre", scheme: "Scheme A", state: "Tamil Nadu", district: "Tiruvallur", status: "Active", beneficiaries: 148, cctv_status: "Live", risk_score: 21, last_inspection: "2026-09-18" },
@@ -84,25 +84,32 @@ app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
-// Authentication endpoints
+// Authentication endpoints: supports login with Username OR Email
 app.post("/api/login", (req, res) => {
-  const { email, password } = req.body;
-  const user = db.users.find(u => (u.email || "").toLowerCase() === (email || "").trim().toLowerCase() && u.password === password);
-  if (!user) return res.status(401).json({ error: "Invalid credentials" });
+  const identifier = (req.body.username || req.body.email || "").trim().toLowerCase();
+  const password = req.body.password;
+  const user = db.users.find(u => {
+    const uEmail = (u.email || "").toLowerCase();
+    const uUser = (u.username || "").toLowerCase();
+    return (uEmail === identifier || uUser === identifier) && u.password === password;
+  });
+  if (!user) return res.status(401).json({ error: "Invalid username or password" });
   const { password: _, ...safeUser } = user;
   res.json({ user: safeUser });
 });
 
 app.post("/api/register", (req, res) => {
-  const { name, email, password, role, mobile } = req.body;
+  const { name, email, username, password, role, mobile } = req.body;
   if (!name || !email || !password || !role) {
     return res.status(400).json({ error: "All required fields must be completed" });
   }
-  if (db.users.some(u => (u.email || "").toLowerCase() === email.trim().toLowerCase())) {
-    return res.status(409).json({ error: "An account with this email already exists" });
+  const cleanEmail = email.trim().toLowerCase();
+  const cleanUser = (username || email.split("@")[0]).trim().toLowerCase();
+  if (db.users.some(u => (u.email || "").toLowerCase() === cleanEmail || (u.username || "").toLowerCase() === cleanUser)) {
+    return res.status(409).json({ error: "An account with this username or email already exists" });
   }
   const id = db.users.length ? Math.max(...db.users.map(u => u.id)) + 1 : 1;
-  const newUser = { id, name, email: email.trim(), password, role, mobile: mobile || "" };
+  const newUser = { id, username: cleanUser, name, email: email.trim(), password, role, mobile: mobile || "" };
   db.users.push(newUser);
   saveStore(db);
   const { password: _, ...safeUser } = newUser;

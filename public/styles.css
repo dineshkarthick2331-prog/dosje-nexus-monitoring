@@ -890,6 +890,27 @@ body.dark-mode .sim-score-card {
   line-height: 1.45;
 }
 
+/* Demo Credential Hint */
+.demo-cred-hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 9px;
+  color: var(--muted);
+  margin: 6px 0 12px;
+}
+.demo-cred-hint code {
+  background: rgba(16, 42, 67, 0.06);
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: #2d6cdf;
+  font-weight: 700;
+}
+body.dark-mode .demo-cred-hint code {
+  background: rgba(255, 255, 255, 0.08);
+  color: #63a0ff;
+}
+
 /* Quick Login Section */
 .quick-login-section {
   margin-top: 22px;
