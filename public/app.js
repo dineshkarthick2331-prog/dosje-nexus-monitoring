@@ -1497,15 +1497,20 @@ function initTheme() {
   const saved = localStorage.getItem("dosjeTheme");
   if (saved === "dark") {
     document.body.classList.add("dark-mode");
+  } else {
+    document.body.classList.remove("dark-mode");
   }
 }
 
-$("#themeToggle")?.addEventListener("click", () => {
+function toggleTheme() {
   document.body.classList.toggle("dark-mode");
   const isDark = document.body.classList.contains("dark-mode");
   localStorage.setItem("dosjeTheme", isDark ? "dark" : "light");
   toast(isDark ? "Switched to Cyber Command Dark Mode" : "Switched to Clean Light Mode", isDark ? "🌙" : "☀️");
-});
+}
+
+$("#themeToggle")?.addEventListener("click", toggleTheme);
+$("#authThemeToggle")?.addEventListener("click", toggleTheme);
 
 // ----------------------------------------------------
 // SIMULATION ENGINE TOGGLE
@@ -2094,6 +2099,7 @@ $("#dropdownLogoutBtn")?.addEventListener("click", logoutUser);
 
 // Boot application & Configure Role Experience
 function boot() {
+  initTheme();
   const curUser = getUser();
   if (!curUser) {
     // Present authentication screen when not logged in
