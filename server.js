@@ -5,6 +5,28 @@ const fs = require("fs");
 const os = require("os");
 const multer = require("multer");
 
+// ─── Formspree Integration ───────────────────────────────────────────────────
+const FORMSPREE_URL = "https://formspree.io/f/xyeklbpy";
+
+/**
+ * Fire-and-forget: forward a payload to Formspree for email notification.
+ * Never throws — failures are silently logged so the API is never blocked.
+ * @param {string} subject  Short label shown in Formspree inbox
+ * @param {object} data     Key-value pairs to include in the submission
+ */
+async function notifyFormspree(subject, data) {
+  try {
+    await fetch(FORMSPREE_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({ _subject: subject, ...data, _timestamp: new Date().toISOString() })
+    });
+  } catch (err) {
+    console.warn("[Formspree] notification skipped:", err.message);
+  }
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 const isVercel = Boolean(process.env.VERCEL);
@@ -113,6 +135,10 @@ app.post("/api/register", (req, res) => {
   db.users.push(newUser);
   saveStore(db);
   const { password: _, ...safeUser } = newUser;
+  // Notify Formspree (fire-and-forget)
+  notifyFormspree("New User Registration – DoSJE Nexus", {
+    name, email: email.trim(), username: cleanUser, role, mobile: mobile || ""
+  });
   res.json({ user: safeUser });
 });
 
@@ -175,6 +201,7 @@ app.post("/api/inspections/assign-random", (req, res) => {
 
 app.post("/api/inspections", upload.single("evidence"), (req, res) => {
   const id = db.inspections.length ? Math.max(...db.inspections.map(i => i.id)) + 1 : 1;
+  const proj = db.projects.find(p => p.id === Number(req.body.project_id));
   const newInspection = {
     id,
     project_id: Number(req.body.project_id),
@@ -189,6 +216,17 @@ app.post("/api/inspections", upload.single("evidence"), (req, res) => {
   };
   db.inspections.push(newInspection);
   saveStore(db);
+  // Notify Formspree (fire-and-forget)
+  notifyFormspree("Field Inspection Submitted – DoSJE Nexus", {
+    inspection_id: id,
+    project: proj ? proj.name : req.body.project_id,
+    officer: req.body.officer,
+    findings: req.body.findings || "",
+    compliance_score: req.body.score || "",
+    latitude: req.body.latitude || "",
+    longitude: req.body.longitude || "",
+    has_evidence: req.file ? "Yes" : "No"
+  });
   res.json({ id });
 });
 
@@ -228,6 +266,18 @@ app.post("/api/projects", (req, res) => {
   };
   db.projects.push(newProject);
   saveStore(db);
+  // Notify Formspree (fire-and-forget)
+  notifyFormspree("New Project Registered – DoSJE Nexus", {
+    project_id: id,
+    name,
+    scheme: scheme || "Scheme A",
+    state,
+    district,
+    status: req.body.status || "Active",
+    beneficiaries: Number(beneficiaries) || 50,
+    cctv_status: cctv_status || "Live",
+    risk_score: Number(risk_score) || 20
+  });
   res.status(201).json(newProject);
 });
 
@@ -263,6 +313,7 @@ app.delete("/api/projects/:id", (req, res) => {
 app.post("/api/alerts", (req, res) => {
   const { project_id, severity, title, message } = req.body;
   const id = db.alerts.length ? Math.max(...db.alerts.map(a => a.id)) + 1 : 1;
+  const proj = db.projects.find(p => p.id === Number(project_id));
   const newAlert = {
     id,
     project_id: project_id ? Number(project_id) : (db.projects[0] ? db.projects[0].id : null),
@@ -274,6 +325,14 @@ app.post("/api/alerts", (req, res) => {
   };
   db.alerts.unshift(newAlert);
   saveStore(db);
+  // Notify Formspree (fire-and-forget)
+  notifyFormspree(`Alert Triggered [${newAlert.severity}] – DoSJE Nexus`, {
+    alert_id: id,
+    severity: newAlert.severity,
+    title: newAlert.title,
+    message: newAlert.message,
+    project: proj ? proj.name : (project_id || "System")
+  });
   res.status(201).json(newAlert);
 });
 
@@ -281,6 +340,7 @@ app.post("/api/alerts", (req, res) => {
 app.post("/api/vc/session", (req, res) => {
   const { project_id, officer, checklist, notes } = req.body;
   const id = db.inspections.length ? Math.max(...db.inspections.map(i => i.id)) + 1 : 1;
+  const proj = db.projects.find(p => p.id === Number(project_id));
   const newInspection = {
     id,
     project_id: Number(project_id) || (db.projects[0] ? db.projects[0].id : 1),
@@ -295,8 +355,48 @@ app.post("/api/vc/session", (req, res) => {
   };
   db.inspections.push(newInspection);
   saveStore(db);
+  // Notify Formspree (fire-and-forget)
+  notifyFormspree("VC Verification Session Sealed – DoSJE Nexus", {
+    inspection_id: id,
+    project: proj ? proj.name : project_id,
+    officer: officer || "Verification Officer",
+    verified_items: checklist ? checklist.join(", ") : "All parameters",
+    notes: notes || ""
+  });
   res.json({ ok: true, inspection: newInspection });
 });
+
+// ─── Contact / Feedback endpoint ─────────────────────────────────────────────
+// Forwards contact form messages directly to Formspree and returns JSON.
+app.post("/api/contact", async (req, res) => {
+  const { name, email, subject, message } = req.body;
+  if (!name || !email || !message) {
+    return res.status(400).json({ error: "Name, email and message are required" });
+  }
+  try {
+    const fsRes = await fetch(FORMSPREE_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({
+        _subject: `DoSJE Nexus Contact: ${subject || "General Enquiry"}`,
+        name,
+        email,
+        subject: subject || "General Enquiry",
+        message,
+        _timestamp: new Date().toISOString()
+      })
+    });
+    const json = await fsRes.json();
+    if (json.ok) {
+      res.json({ ok: true, message: "Message sent successfully" });
+    } else {
+      res.status(500).json({ error: "Formspree rejected the submission", detail: json });
+    }
+  } catch (err) {
+    res.status(500).json({ error: "Failed to forward to Formspree", detail: err.message });
+  }
+});
+// ─────────────────────────────────────────────────────────────────────────────
 
 // Generate dynamic report data
 app.get("/api/reports/:type", (req, res) => {

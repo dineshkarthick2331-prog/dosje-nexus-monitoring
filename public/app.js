@@ -2177,3 +2177,52 @@ function boot() {
 
 // Auto-run on script load
 boot();
+
+// ─── Contact / Feedback Form (Formspree) ────────────────────────────────────
+$(document).addEventListener("submit", async function (e) {
+  if (!e.target || e.target.id !== "contactForm") return;
+  e.preventDefault();
+
+  const btn = $("#contactSubmitBtn");
+  const resultEl = $("#contactResult");
+  const originalText = btn.textContent;
+
+  btn.disabled = true;
+  btn.textContent = "Sending…";
+  resultEl.textContent = "";
+  resultEl.className = "";
+
+  try {
+    const payload = {
+      name:    ($("#contactName")?.value || "").trim(),
+      email:   ($("#contactEmail")?.value || "").trim(),
+      subject: ($("#contactSubject")?.value || "").trim(),
+      message: ($("#contactMessage")?.value || "").trim()
+    };
+
+    const res = await fetch("/api/contact", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify(payload)
+    });
+
+    const json = await res.json();
+
+    if (json.ok) {
+      resultEl.textContent = "✓ Message sent successfully! We will get back to you soon.";
+      resultEl.className = "contact-result-success";
+      e.target.reset();
+      toast("Message sent via Formspree ✓", "✉");
+    } else {
+      resultEl.textContent = json.error || "Failed to send. Please try again.";
+      resultEl.className = "contact-result-error";
+    }
+  } catch (err) {
+    resultEl.textContent = "Network error. Please check your connection and retry.";
+    resultEl.className = "contact-result-error";
+  } finally {
+    btn.disabled = false;
+    btn.textContent = originalText;
+  }
+});
+// ─────────────────────────────────────────────────────────────────────────────

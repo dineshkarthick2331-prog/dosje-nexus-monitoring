@@ -150,6 +150,7 @@
       <div class="nav-caption">OPERATIONS</div>
       <a href="#vc" class="nav-item" data-route="vc"><span class="nav-icon">◌</span><span>Random VC</span></a>
       <a href="#reports" class="nav-item" data-route="reports"><span class="nav-icon">▤</span><span>Reports</span></a>
+      <a href="#contact" class="nav-item" data-route="contact"><span class="nav-icon">✉</span><span>Contact</span></a>
       <a href="#login" class="nav-item" data-route="login"><span class="nav-icon">🔑</span><span>Login Portal</span></a>
     </nav>
     <div class="sidebar-bottom">
@@ -563,6 +564,74 @@
           </div>
         </div>
       </section>
+
+        <!-- CONTACT / FEEDBACK SECTION -->
+        <section class="page hidden" data-page="contact">
+          <div class="section-title">
+            <div>
+              <span class="eyebrow">SUPPORT &amp; OUTREACH</span>
+              <h1>Contact &amp; Feedback</h1>
+              <p>Send messages, queries, or feedback directly to the DoSJE Nexus operations team. All submissions are logged via Formspree.</p>
+            </div>
+          </div>
+
+          <div class="contact-layout">
+            <div class="contact-form-card">
+              <span class="eyebrow">SEND A MESSAGE</span>
+              <h2>Get in Touch</h2>
+              <p class="sub">Fill out the form below and we will get back to you within 24 hours.</p>
+              <form id="contactForm">
+                <div class="two-col">
+                  <label>Full Name
+                    <input id="contactName" required placeholder="Your name">
+                  </label>
+                  <label>Email Address
+                    <input id="contactEmail" type="email" required placeholder="you@department.gov.in">
+                  </label>
+                </div>
+                <label>Subject
+                  <input id="contactSubject" placeholder="e.g. Inspection Query, System Issue">
+                </label>
+                <label>Message
+                  <textarea id="contactMessage" required placeholder="Describe your query or feedback in detail..." style="height:110px;resize:vertical;"></textarea>
+                </label>
+                <div id="contactResult" style="min-height:18px;font-size:10px;margin-top:6px;"></div>
+                <div class="modal-actions" style="justify-content:flex-start;margin-top:14px;">
+                  <button type="submit" class="btn primary" id="contactSubmitBtn">✉ Send Message</button>
+                  <button type="reset" class="btn secondary">Clear</button>
+                </div>
+              </form>
+            </div>
+
+            <div class="contact-info-col">
+              <div class="contact-info-card">
+                <div class="contact-info-icon">🏛</div>
+                <h3>Department of Social Justice &amp; Empowerment</h3>
+                <p>Ministry of Social Justice &amp; Empowerment, Government of India</p>
+              </div>
+              <div class="contact-info-card">
+                <div class="contact-info-icon">📧</div>
+                <h3>Email</h3>
+                <p>nexus-support@dosje.gov.in</p>
+              </div>
+              <div class="contact-info-card">
+                <div class="contact-info-icon">📞</div>
+                <h3>Helpdesk Hotline</h3>
+                <p>1800-XXX-XXXX (Toll Free, Mon–Fri 9am–6pm)</p>
+              </div>
+              <div class="contact-info-card">
+                <div class="contact-info-icon">⌖</div>
+                <h3>Headquarters</h3>
+                <p>Shastri Bhawan, New Delhi – 110001</p>
+              </div>
+              <div class="contact-formspree-badge">
+                <span>Powered by</span>
+                <b>Formspree</b>
+                <small>Secure form submissions</small>
+              </div>
+            </div>
+          </div>
+        </section>
     </div>
   </main>
 </div>
